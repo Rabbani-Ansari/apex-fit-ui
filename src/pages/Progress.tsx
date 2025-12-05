@@ -1,4 +1,4 @@
-import { useState, memo, useCallback } from "react";
+import { useState, memo } from "react";
 import { motion } from "framer-motion";
 import {
   Scale,
@@ -6,7 +6,9 @@ import {
   Utensils,
   Camera,
   TrendingDown,
+  TrendingUp,
   Award,
+  Loader2,
 } from "lucide-react";
 import {
   LineChart,
@@ -18,12 +20,22 @@ import {
 } from "recharts";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { progressData, userData } from "@/data/mockData";
+import { useWeightProgress, useMilestones, useProgressPhotos } from "@/hooks/useProgress";
+import { useAttendanceStats, useAttendance } from "@/hooks/useAttendance";
+import { useAuth } from "@/contexts/AuthContext";
 
 type TabType = "weight" | "workouts" | "diet" | "photos";
 
 const Progress = memo(() => {
   const [activeTab, setActiveTab] = useState<TabType>("weight");
+  const { member } = useAuth();
+
+  // Real data hooks
+  const { chartData, latestWeight, weightChange, isLoading: weightLoading } = useWeightProgress();
+  const { currentStreak, monthlyCount, attendanceCalendar, isLoading: attendanceLoading } = useAttendanceStats();
+  const { data: milestones, isLoading: milestonesLoading } = useMilestones();
+  const { data: photos, isLoading: photosLoading } = useProgressPhotos();
+  const { data: attendanceData } = useAttendance();
 
   const tabs = [
     { id: "weight" as const, label: "Weight", icon: Scale },
@@ -42,79 +54,95 @@ const Progress = memo(() => {
       <GlassCard className="p-4">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-semibold text-foreground">Weight Trend</h3>
-          <div className="flex items-center gap-1 text-fitness-success">
-            <TrendingDown className="h-4 w-4" />
-            <span className="text-sm font-medium">-4kg</span>
+          {weightChange !== 0 && (
+            <div className={`flex items-center gap-1 ${weightChange > 0 ? 'text-fitness-error' : 'text-fitness-success'}`}>
+              {weightChange > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+              <span className="text-sm font-medium">{weightChange > 0 ? '+' : ''}{weightChange}kg</span>
+            </div>
+          )}
+        </div>
+
+        {weightLoading ? (
+          <div className="h-48 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        </div>
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={progressData.weight}>
-              <defs>
-                <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="hsl(24, 100%, 55%)" />
-                  <stop offset="50%" stopColor="hsl(45, 100%, 55%)" />
-                  <stop offset="100%" stopColor="hsl(280, 100%, 65%)" />
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="date"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-              />
-              <YAxis
-                domain={["dataMin - 1", "dataMax + 1"]}
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "0.75rem",
-                }}
-                labelStyle={{ color: "hsl(var(--foreground))" }}
-              />
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke="url(#lineGradient)"
-                strokeWidth={3}
-                dot={{ fill: "hsl(var(--fitness-orange))", strokeWidth: 0, r: 4 }}
-                activeDot={{ r: 6, fill: "hsl(var(--fitness-orange))" }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        ) : chartData.length > 0 ? (
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <defs>
+                  <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="hsl(24, 100%, 55%)" />
+                    <stop offset="50%" stopColor="hsl(45, 100%, 55%)" />
+                    <stop offset="100%" stopColor="hsl(280, 100%, 65%)" />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                />
+                <YAxis
+                  domain={["dataMin - 1", "dataMax + 1"]}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "0.75rem",
+                  }}
+                  labelStyle={{ color: "hsl(var(--foreground))" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="url(#lineGradient)"
+                  strokeWidth={3}
+                  dot={{ fill: "hsl(var(--fitness-orange))", strokeWidth: 0, r: 4 }}
+                  activeDot={{ r: 6, fill: "hsl(var(--fitness-orange))" }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-48 flex items-center justify-center text-muted-foreground">
+            No weight data recorded yet
+          </div>
+        )}
       </GlassCard>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3">
         <GlassCard className="p-4">
           <p className="text-sm text-muted-foreground">Current</p>
-          <p className="text-2xl font-bold text-foreground">{userData.weight}kg</p>
+          <p className="text-2xl font-bold text-foreground">
+            {latestWeight ? `${latestWeight}kg` : '--'}
+          </p>
         </GlassCard>
         <GlassCard className="p-4">
           <p className="text-sm text-muted-foreground">Target</p>
-          <p className="text-2xl font-bold text-fitness-success">{userData.targetWeight}kg</p>
-        </GlassCard>
-        <GlassCard className="p-4">
-          <p className="text-sm text-muted-foreground">BMI</p>
-          <p className="text-2xl font-bold text-fitness-orange">{userData.bmi}</p>
-        </GlassCard>
-        <GlassCard className="p-4">
-          <p className="text-sm text-muted-foreground">Body Fat</p>
-          <p className="text-2xl font-bold text-fitness-purple">{userData.bodyFat}%</p>
+          <p className="text-2xl font-bold text-fitness-success">--</p>
         </GlassCard>
       </div>
     </motion.div>
   );
 
   const renderWorkoutsTab = () => {
-    const days = Object.entries(progressData.workoutCalendar);
-    const currentMonth = days.slice(-30);
+    // Build calendar from attendance data
+    const calendarDays = Object.entries(attendanceCalendar);
+    const last30Days = [];
+    const today = new Date();
+
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      last30Days.push({ date: dateStr, completed: attendanceCalendar[dateStr] || false });
+    }
 
     return (
       <motion.div
@@ -127,31 +155,36 @@ const Progress = memo(() => {
           <h3 className="mb-4 font-semibold text-foreground">
             Workout Calendar
           </h3>
-          <div className="grid grid-cols-7 gap-1">
-            {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
-              <div
-                key={i}
-                className="flex h-8 items-center justify-center text-xs text-muted-foreground"
-              >
-                {day}
-              </div>
-            ))}
-            {currentMonth.map(([date, completed], index) => (
-              <motion.div
-                key={date}
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.01 }}
-                className={`flex h-8 w-full items-center justify-center rounded-lg text-xs ${
-                  completed
+          {attendanceLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-7 gap-1">
+              {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
+                <div
+                  key={i}
+                  className="flex h-8 items-center justify-center text-xs text-muted-foreground"
+                >
+                  {day}
+                </div>
+              ))}
+              {last30Days.map(({ date, completed }, index) => (
+                <motion.div
+                  key={date}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.01 }}
+                  className={`flex h-8 w-full items-center justify-center rounded-lg text-xs ${completed
                     ? "bg-fitness-success text-white"
                     : "bg-muted/50 text-muted-foreground"
-                }`}
-              >
-                {new Date(date).getDate()}
-              </motion.div>
-            ))}
-          </div>
+                    }`}
+                >
+                  {new Date(date).getDate()}
+                </motion.div>
+              ))}
+            </div>
+          )}
         </GlassCard>
 
         {/* Workout Stats */}
@@ -159,16 +192,12 @@ const Progress = memo(() => {
           <h3 className="mb-4 font-semibold text-foreground">Statistics</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Total Workouts</span>
-              <span className="font-bold text-foreground">{userData.totalWorkouts}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Calories Burned</span>
-              <span className="font-bold text-fitness-orange">{userData.caloriesBurned.toLocaleString()}</span>
+              <span className="text-muted-foreground">This Month</span>
+              <span className="font-bold text-foreground">{monthlyCount} workouts</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Current Streak</span>
-              <span className="font-bold text-fitness-yellow">{userData.streak} days</span>
+              <span className="font-bold text-fitness-yellow">{currentStreak} days</span>
             </div>
           </div>
         </GlassCard>
@@ -176,26 +205,33 @@ const Progress = memo(() => {
         {/* Milestones */}
         <GlassCard className="p-4">
           <h3 className="mb-4 font-semibold text-foreground">Milestones</h3>
-          <div className="grid grid-cols-4 gap-2">
-            {progressData.milestones.map((milestone, index) => (
-              <motion.div
-                key={milestone.id}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1 }}
-                className={`flex flex-col items-center rounded-xl p-2 ${
-                  milestone.achieved
+          {milestonesLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : milestones && milestones.length > 0 ? (
+            <div className="grid grid-cols-4 gap-2">
+              {milestones.map((milestone, index) => (
+                <motion.div
+                  key={milestone.id}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.1 }}
+                  className={`flex flex-col items-center rounded-xl p-2 ${milestone.achieved
                     ? "bg-fitness-orange/10"
                     : "bg-muted/30 opacity-50"
-                }`}
-              >
-                <span className="text-2xl">{milestone.icon}</span>
-                <span className="mt-1 text-center text-[10px] font-medium text-foreground">
-                  {milestone.title}
-                </span>
-              </motion.div>
-            ))}
-          </div>
+                    }`}
+                >
+                  <span className="text-2xl">{milestone.icon}</span>
+                  <span className="mt-1 text-center text-[10px] font-medium text-foreground">
+                    {milestone.title}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground text-sm">No milestones yet</p>
+          )}
         </GlassCard>
       </motion.div>
     );
@@ -211,22 +247,25 @@ const Progress = memo(() => {
         <h3 className="mb-4 font-semibold text-foreground">Weekly Average</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="rounded-xl bg-fitness-orange/10 p-4 text-center">
-            <p className="text-2xl font-bold text-fitness-orange">2,100</p>
+            <p className="text-2xl font-bold text-fitness-orange">--</p>
             <p className="text-xs text-muted-foreground">Avg Calories</p>
           </div>
           <div className="rounded-xl bg-fitness-purple/10 p-4 text-center">
-            <p className="text-2xl font-bold text-fitness-purple">145g</p>
+            <p className="text-2xl font-bold text-fitness-purple">--</p>
             <p className="text-xs text-muted-foreground">Avg Protein</p>
           </div>
           <div className="rounded-xl bg-fitness-yellow/10 p-4 text-center">
-            <p className="text-2xl font-bold text-fitness-yellow">210g</p>
+            <p className="text-2xl font-bold text-fitness-yellow">--</p>
             <p className="text-xs text-muted-foreground">Avg Carbs</p>
           </div>
           <div className="rounded-xl bg-fitness-pink/10 p-4 text-center">
-            <p className="text-2xl font-bold text-fitness-pink">65g</p>
+            <p className="text-2xl font-bold text-fitness-pink">--</p>
             <p className="text-xs text-muted-foreground">Avg Fat</p>
           </div>
         </div>
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          Diet tracking coming soon
+        </p>
       </GlassCard>
 
       <GlassCard className="p-4">
@@ -237,15 +276,10 @@ const Progress = memo(() => {
         <div className="mt-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">This Week</span>
-            <span className="font-bold text-fitness-success">85%</span>
+            <span className="font-bold text-muted-foreground">--</span>
           </div>
           <div className="mt-2 h-3 overflow-hidden rounded-full bg-muted">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: "85%" }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="h-full rounded-full bg-gradient-to-r from-fitness-success to-fitness-yellow"
-            />
+            <div className="h-full w-0 rounded-full bg-gradient-to-r from-fitness-success to-fitness-yellow" />
           </div>
         </div>
       </GlassCard>
@@ -262,28 +296,36 @@ const Progress = memo(() => {
         <h3 className="mb-4 font-semibold text-foreground">
           Progress Photos
         </h3>
-        <div className="grid grid-cols-2 gap-3">
-          {progressData.photos.map((photo, index) => (
-            <motion.div
-              key={photo.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
-              className="relative aspect-[3/4] overflow-hidden rounded-xl"
-            >
-              <img
-                src={photo.url}
-                alt={photo.date}
-                className="h-full w-full object-cover"
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                <span className="text-sm font-medium text-white">
-                  {photo.date}
-                </span>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {photosLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : photos && photos.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3">
+            {photos.map((photo, index) => (
+              <motion.div
+                key={photo.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.1 }}
+                className="relative aspect-[3/4] overflow-hidden rounded-xl"
+              >
+                <img
+                  src={photo.photo_url}
+                  alt={photo.date}
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                  <span className="text-sm font-medium text-white">
+                    {new Date(photo.date).toLocaleDateString()}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground py-8">No photos uploaded yet</p>
+        )}
       </GlassCard>
 
       <motion.button
@@ -318,11 +360,10 @@ const Progress = memo(() => {
                 key={tab.id}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? "bg-fitness-orange text-white"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                }`}
+                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition-all ${activeTab === tab.id
+                  ? "bg-fitness-orange text-white"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  }`}
               >
                 <Icon className="h-4 w-4" />
                 {tab.label}
@@ -344,3 +385,4 @@ const Progress = memo(() => {
 Progress.displayName = "Progress";
 
 export default Progress;
+

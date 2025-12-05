@@ -1,5 +1,6 @@
 import { useState, memo } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import {
   User,
   Phone,
@@ -15,28 +16,39 @@ import {
   LogOut,
   Crown,
   Calendar,
+  Loader2,
 } from "lucide-react";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { userData, trainerData } from "@/data/mockData";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMember, useMembershipStatus } from "@/hooks/useMember";
+import { useGymTheme } from "@/hooks/useGymBranding";
 
 const Profile = memo(() => {
+  const navigate = useNavigate();
+  const { member, signOut } = useAuth();
+  const { data: memberData, isLoading } = useMember();
+  const { daysLeft } = useMembershipStatus();
+  const { gymName, contactNumber } = useGymTheme();
+
   const [darkMode, setDarkMode] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [metricUnits, setMetricUnits] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const displayMember = memberData || member;
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     document.documentElement.classList.toggle("dark");
   };
 
-  const metrics = [
-    { icon: Ruler, label: "Height", value: `${userData.height} cm` },
-    { icon: Weight, label: "Weight", value: `${userData.weight} kg` },
-    { icon: Activity, label: "BMI", value: userData.bmi.toFixed(1) },
-    { icon: Activity, label: "Body Fat", value: `${userData.bodyFat}%` },
-  ];
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <PageTransition>
@@ -51,11 +63,17 @@ const Profile = memo(() => {
             whileHover={{ scale: 1.05 }}
             className="relative"
           >
-            <img
-              src={userData.avatar}
-              alt={userData.name}
-              className="h-24 w-24 rounded-3xl object-cover ring-4 ring-fitness-orange/30"
-            />
+            {displayMember?.photo ? (
+              <img
+                src={displayMember.photo}
+                alt={displayMember.name}
+                className="h-24 w-24 rounded-3xl object-cover ring-4 ring-fitness-orange/30"
+              />
+            ) : (
+              <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-fitness-orange to-fitness-yellow flex items-center justify-center ring-4 ring-fitness-orange/30">
+                <User className="h-12 w-12 text-white" />
+              </div>
+            )}
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -66,9 +84,9 @@ const Profile = memo(() => {
             </motion.div>
           </motion.div>
           <h1 className="mt-4 text-2xl font-bold text-foreground">
-            {userData.name}
+            {displayMember?.name || "Member"}
           </h1>
-          <p className="text-muted-foreground">{userData.email}</p>
+          <p className="text-muted-foreground">{displayMember?.email}</p>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -77,43 +95,44 @@ const Profile = memo(() => {
           >
             <Crown className="h-3 w-3 text-fitness-orange" />
             <span className="text-xs font-medium text-fitness-orange">
-              {userData.plan} Member
+              {displayMember?.plan || "Standard"} Member
             </span>
           </motion.div>
         </motion.div>
 
-        {/* Body Metrics */}
+        {/* Contact Info */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
           <h2 className="mb-3 text-lg font-semibold text-foreground">
-            Body Metrics
+            Contact Info
           </h2>
           <GlassCard className="p-4">
-            <div className="grid grid-cols-2 gap-4">
-              {metrics.map((metric, index) => (
-                <motion.div
-                  key={metric.label}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2 + index * 0.1 }}
-                  className="flex items-center gap-3"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
-                    <metric.icon className="h-5 w-5 text-fitness-orange" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      {metric.label}
-                    </p>
-                    <p className="font-semibold text-foreground">
-                      {metric.value}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
+                  <Phone className="h-5 w-5 text-fitness-orange" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Phone</p>
+                  <p className="font-semibold text-foreground">
+                    {displayMember?.phone || "Not set"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
+                  <Mail className="h-5 w-5 text-fitness-orange" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="font-semibold text-foreground">
+                    {displayMember?.email}
+                  </p>
+                </div>
+              </div>
             </div>
           </GlassCard>
         </motion.div>
@@ -136,18 +155,23 @@ const Profile = memo(() => {
                 </div>
                 <div>
                   <p className="font-semibold text-foreground">
-                    {userData.plan} Plan
+                    {displayMember?.plan || "Standard"} Plan
                   </p>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Calendar className="h-3 w-3" />
                     <span>
-                      Expires{" "}
-                      {new Date(userData.planExpiry).toLocaleDateString()}
+                      {displayMember?.expiry_date
+                        ? `Expires ${new Date(displayMember.expiry_date).toLocaleDateString()}`
+                        : "No expiry set"
+                      }
                     </span>
                   </div>
                 </div>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              <div className="text-right">
+                <p className="text-2xl font-bold text-fitness-orange">{daysLeft}</p>
+                <p className="text-xs text-muted-foreground">days left</p>
+              </div>
             </div>
 
             {/* QR Code */}
@@ -162,7 +186,7 @@ const Profile = memo(() => {
           </GlassCard>
         </motion.div>
 
-        {/* Trainer Card */}
+        {/* Gym Info */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -170,43 +194,19 @@ const Profile = memo(() => {
           className="mt-6"
         >
           <h2 className="mb-3 text-lg font-semibold text-foreground">
-            Your Trainer
+            Your Gym
           </h2>
           <GlassCard className="p-4">
             <div className="flex items-center gap-4">
-              <img
-                src={trainerData.avatar}
-                alt={trainerData.name}
-                className="h-16 w-16 rounded-2xl object-cover"
-              />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
+                <Activity className="h-6 w-6 text-fitness-orange" />
+              </div>
               <div className="flex-1">
-                <p className="font-semibold text-foreground">
-                  {trainerData.name}
-                </p>
+                <p className="font-semibold text-foreground">{gymName}</p>
                 <p className="text-sm text-muted-foreground">
-                  {trainerData.specialization}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {trainerData.experience} experience
+                  {contactNumber || "Contact not available"}
                 </p>
               </div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <motion.a
-                whileTap={{ scale: 0.98 }}
-                href={`tel:${trainerData.phone}`}
-                className="flex items-center justify-center gap-2 rounded-xl bg-fitness-success/20 py-3 text-sm font-medium text-fitness-success"
-              >
-                <Phone className="h-4 w-4" />
-                Call
-              </motion.a>
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center justify-center gap-2 rounded-xl bg-fitness-orange/20 py-3 text-sm font-medium text-fitness-orange"
-              >
-                <Mail className="h-4 w-4" />
-                Message
-              </motion.button>
             </div>
           </GlassCard>
         </motion.div>
@@ -268,10 +268,16 @@ const Profile = memo(() => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
           whileTap={{ scale: 0.98 }}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-destructive/10 py-4 text-destructive"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-destructive/10 py-4 text-destructive disabled:opacity-50"
         >
-          <LogOut className="h-5 w-5" />
-          <span className="font-medium">Log Out</span>
+          {loggingOut ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <LogOut className="h-5 w-5" />
+          )}
+          <span className="font-medium">{loggingOut ? "Logging out..." : "Log Out"}</span>
         </motion.button>
 
         {/* App Version */}
@@ -286,3 +292,4 @@ const Profile = memo(() => {
 Profile.displayName = "Profile";
 
 export default Profile;
+

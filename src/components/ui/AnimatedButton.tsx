@@ -11,6 +11,7 @@ interface AnimatedButtonProps {
   disabled?: boolean;
   icon?: ReactNode;
   fullWidth?: boolean;
+  type?: "button" | "submit" | "reset";
 }
 
 export const AnimatedButton = ({
@@ -22,6 +23,7 @@ export const AnimatedButton = ({
   disabled = false,
   icon,
   fullWidth = false,
+  type = "button",
 }: AnimatedButtonProps) => {
   const baseStyles =
     "relative inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all overflow-hidden";
@@ -41,6 +43,7 @@ export const AnimatedButton = ({
 
   return (
     <motion.button
+      type={type}
       whileHover={{ scale: disabled ? 1 : 1.02 }}
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       onClick={onClick}

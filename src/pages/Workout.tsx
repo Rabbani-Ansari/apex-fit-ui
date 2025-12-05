@@ -8,6 +8,7 @@ import {
   StickyNote,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageTransition } from "@/components/layout/PageTransition";
@@ -26,7 +27,8 @@ import { LastWorkoutComparison } from "@/components/workout/LastWorkoutCompariso
 import { ExerciseVideoToggle } from "@/components/workout/ExerciseVideoToggle";
 import { VoiceCoachingToggle } from "@/components/workout/VoiceCoachingToggle";
 import { useVoiceCoaching } from "@/hooks/useVoiceCoaching";
-import { todayWorkout, lastWorkoutData } from "@/data/mockData";
+import { useTodayWorkout } from "@/hooks/useWorkouts";
+import { todayWorkout as mockTodayWorkout, lastWorkoutData } from "@/data/mockData";
 
 interface SetData {
   setNumber: number;
@@ -45,11 +47,12 @@ interface Exercise {
   restTime: number;
   completed: boolean;
   animation: string;
+  animationUrl?: string | null; // URL from Supabase Storage
   setData: SetData[];
 }
 
-const initializeExercises = (): Exercise[] => {
-  return todayWorkout.exercises.map((e) => ({
+const initializeExercises = (workoutData: typeof mockTodayWorkout): Exercise[] => {
+  return workoutData.exercises.map((e) => ({
     ...e,
     setData: Array(e.sets)
       .fill(0)
@@ -64,7 +67,30 @@ const initializeExercises = (): Exercise[] => {
 };
 
 const Workout = memo(() => {
-  const [exercises, setExercises] = useState<Exercise[]>(initializeExercises);
+  // Fetch workout from Supabase
+  const { workout: backendWorkout, isLoading } = useTodayWorkout();
+
+  // Use backend workout if available, otherwise use mock data
+  const todayWorkout = backendWorkout ? {
+    ...mockTodayWorkout,
+    name: backendWorkout.name,
+    duration: backendWorkout.duration || mockTodayWorkout.duration,
+    calories: backendWorkout.calories || mockTodayWorkout.calories,
+    muscleGroups: backendWorkout.muscle_groups || mockTodayWorkout.muscleGroups,
+    exercises: backendWorkout.exercises?.map(e => ({
+      id: e.id,
+      name: e.name,
+      sets: e.sets,
+      reps: e.reps,
+      weight: e.weight || 0,
+      restTime: e.rest_time || 60,
+      completed: false,
+      animation: e.animation_type || 'bench-press',
+      animationUrl: e.animation_url, // Pass Supabase Storage URL
+    })) || mockTodayWorkout.exercises,
+  } : mockTodayWorkout;
+
+  const [exercises, setExercises] = useState<Exercise[]>(() => initializeExercises(todayWorkout));
   const [currentExercise, setCurrentExercise] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
   const [isResting, setIsResting] = useState(false);
@@ -226,7 +252,7 @@ const Workout = memo(() => {
     setCurrentExercise(0);
     setCurrentSet(1);
     setTotalTime(0);
-    setExercises(initializeExercises());
+    setExercises(initializeExercises(todayWorkout));
     setWorkoutNotes("");
   };
 
@@ -334,6 +360,7 @@ const Workout = memo(() => {
                       >
                         <LottieAnimation
                           type={exercise.animation}
+                          url={exercise.animationUrl}
                           size={100}
                         />
                       </motion.div>
@@ -419,13 +446,12 @@ const Workout = memo(() => {
           {exercises.map((e, i) => (
             <motion.div
               key={e.id}
-              className={`h-1.5 flex-1 rounded-full transition-colors ${
-                e.completed
-                  ? "bg-fitness-success"
-                  : i === currentExercise
+              className={`h-1.5 flex-1 rounded-full transition-colors ${e.completed
+                ? "bg-fitness-success"
+                : i === currentExercise
                   ? "bg-fitness-orange"
                   : "bg-muted"
-              }`}
+                }`}
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               transition={{ delay: i * 0.05 }}
@@ -499,11 +525,10 @@ const Workout = memo(() => {
                   whileTap={{ scale: 0.9 }}
                   onClick={() => navigateExercise(-1)}
                   disabled={currentExercise === 0}
-                  className={`p-2 rounded-full ${
-                    currentExercise === 0
-                      ? "text-muted/50"
-                      : "text-muted-foreground hover:bg-muted/50"
-                  }`}
+                  className={`p-2 rounded-full ${currentExercise === 0
+                    ? "text-muted/50"
+                    : "text-muted-foreground hover:bg-muted/50"
+                    }`}
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </motion.button>
@@ -514,11 +539,10 @@ const Workout = memo(() => {
                   whileTap={{ scale: 0.9 }}
                   onClick={() => navigateExercise(1)}
                   disabled={currentExercise === exercises.length - 1}
-                  className={`p-2 rounded-full ${
-                    currentExercise === exercises.length - 1
-                      ? "text-muted/50"
-                      : "text-muted-foreground hover:bg-muted/50"
-                  }`}
+                  className={`p-2 rounded-full ${currentExercise === exercises.length - 1
+                    ? "text-muted/50"
+                    : "text-muted-foreground hover:bg-muted/50"
+                    }`}
                 >
                   <ChevronRight className="h-5 w-5" />
                 </motion.button>
@@ -593,13 +617,12 @@ const Workout = memo(() => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: index * 0.05 }}
-              className={`flex items-center gap-3 rounded-xl p-3 ${
-                exercise.completed
-                  ? "bg-fitness-success/10"
-                  : index === currentExercise
+              className={`flex items-center gap-3 rounded-xl p-3 ${exercise.completed
+                ? "bg-fitness-success/10"
+                : index === currentExercise
                   ? "bg-fitness-orange/10 ring-1 ring-fitness-orange"
                   : "bg-muted/30"
-              }`}
+                }`}
               onClick={() => {
                 if (!exercise.completed && index !== currentExercise) {
                   setCurrentExercise(index);
@@ -609,13 +632,12 @@ const Workout = memo(() => {
               }}
             >
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                  exercise.completed
-                    ? "bg-fitness-success text-white"
-                    : index === currentExercise
+                className={`flex h-8 w-8 items-center justify-center rounded-full ${exercise.completed
+                  ? "bg-fitness-success text-white"
+                  : index === currentExercise
                     ? "bg-fitness-orange text-white"
                     : "bg-muted text-muted-foreground"
-                }`}
+                  }`}
               >
                 {exercise.completed ? (
                   <Check className="h-4 w-4" />
@@ -625,11 +647,10 @@ const Workout = memo(() => {
               </div>
               <div className="flex-1">
                 <p
-                  className={`font-medium ${
-                    exercise.completed
-                      ? "text-fitness-success"
-                      : "text-foreground"
-                  }`}
+                  className={`font-medium ${exercise.completed
+                    ? "text-fitness-success"
+                    : "text-foreground"
+                    }`}
                 >
                   {exercise.name}
                 </p>

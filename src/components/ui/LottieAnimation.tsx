@@ -7,24 +7,25 @@ interface LottieAnimationProps {
   type: string;
   size?: number;
   className?: string;
+  url?: string | null; // Direct URL to Lottie JSON (e.g., from Supabase Storage)
 }
 
-// Verified working Lottie animation URLs from LottieFiles CDN
+// Free working Lottie animation URLs
 const animationUrls: Record<string, string> = {
-  // Fitness animations
-  "bench-press": "https://assets5.lottiefiles.com/packages/lf20_jbrw3hcz.json",
-  "dumbbell-press": "https://assets4.lottiefiles.com/packages/lf20_w51pcehl.json", 
-  "pull-up": "https://assets2.lottiefiles.com/packages/lf20_uwwpsjud.json",
-  "barbell-row": "https://assets5.lottiefiles.com/packages/lf20_jbrw3hcz.json",
-  "shoulder-press": "https://assets4.lottiefiles.com/packages/lf20_w51pcehl.json",
-  "lateral-raise": "https://assets4.lottiefiles.com/packages/lf20_w51pcehl.json",
-  squat: "https://assets2.lottiefiles.com/packages/lf20_uwwpsjud.json",
-  pushup: "https://assets9.lottiefiles.com/packages/lf20_iorpbol0.json",
-  plank: "https://assets2.lottiefiles.com/packages/lf20_uwwpsjud.json",
-  deadlift: "https://assets5.lottiefiles.com/packages/lf20_jbrw3hcz.json",
-  
+  // Using free LottieFiles animations (verified working)
+  "bench-press": "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
+  "dumbbell-press": "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
+  "pull-up": "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
+  "barbell-row": "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
+  "shoulder-press": "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
+  "lateral-raise": "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
+  squat: "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
+  pushup: "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
+  plank: "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
+  deadlift: "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
+
   // Default
-  default: "https://assets2.lottiefiles.com/packages/lf20_uwwpsjud.json",
+  default: "https://assets10.lottiefiles.com/packages/lf20_z4cshyhf.json",
 };
 
 // Simple animated fallback using SVG
@@ -58,7 +59,7 @@ const AnimatedFallback = ({ type, size }: { type: string; size: number }) => {
       }}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${colors.from}/20 ${colors.to}/20`} />
-      
+
       {/* Animated exercise icon */}
       <motion.div
         className="absolute inset-0 flex items-center justify-center"
@@ -95,7 +96,7 @@ const AnimatedFallback = ({ type, size }: { type: string; size: number }) => {
 // Exercise specific SVG icons
 const ExerciseIcon = ({ type, size }: { type: string; size: number }) => {
   const iconStyle = { width: size, height: size };
-  
+
   switch (type) {
     case "bench-press":
     case "dumbbell-press":
@@ -114,7 +115,7 @@ const ExerciseIcon = ({ type, size }: { type: string; size: number }) => {
           </motion.g>
         </svg>
       );
-    
+
     case "pull-up":
       return (
         <svg viewBox="0 0 64 64" fill="none" style={iconStyle}>
@@ -132,7 +133,7 @@ const ExerciseIcon = ({ type, size }: { type: string; size: number }) => {
           </motion.g>
         </svg>
       );
-    
+
     case "squat":
     case "deadlift":
     case "barbell-row":
@@ -149,7 +150,7 @@ const ExerciseIcon = ({ type, size }: { type: string; size: number }) => {
           </motion.g>
         </svg>
       );
-    
+
     case "pushup":
     case "plank":
       return (
@@ -166,7 +167,7 @@ const ExerciseIcon = ({ type, size }: { type: string; size: number }) => {
           </motion.g>
         </svg>
       );
-    
+
     default:
       return <Dumbbell style={iconStyle} className="text-fitness-orange" />;
   }
@@ -176,30 +177,32 @@ export const LottieAnimation = ({
   type,
   size = 80,
   className = "",
+  url: directUrl,
 }: LottieAnimationProps) => {
   const [animationData, setAnimationData] = useState<object | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const url = useMemo(() => animationUrls[type] || animationUrls.default, [type]);
+  // Prioritize direct URL, fall back to type-based lookup
+  const url = useMemo(() => directUrl || animationUrls[type] || animationUrls.default, [directUrl, type]);
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadAnimation = async () => {
       setIsLoading(true);
       setHasError(false);
 
       try {
-        const response = await fetch(url, { 
+        const response = await fetch(url, {
           mode: 'cors',
           headers: { 'Accept': 'application/json' }
         });
-        
+
         if (!response.ok) throw new Error("Failed to load");
-        
+
         const data = await response.json();
-        
+
         if (isMounted) {
           setAnimationData(data);
           setIsLoading(false);
@@ -214,7 +217,7 @@ export const LottieAnimation = ({
     };
 
     loadAnimation();
-    
+
     return () => {
       isMounted = false;
     };

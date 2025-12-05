@@ -9,21 +9,46 @@ import {
   X,
   Camera,
   Clock,
+  Loader2,
 } from "lucide-react";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { MacroRing } from "@/components/ui/MacroRing";
 import { WaterTracker } from "@/components/ui/WaterTracker";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
+import { useDietSummary } from "@/hooks/useDiet";
 import { todayDiet, indianFoods } from "@/data/mockData";
 
 const Diet = memo(() => {
-  const [meals, setMeals] = useState(todayDiet.meals);
+  // Fetch diet data from Supabase
+  const dietSummary = useDietSummary();
+
+  // Use backend meals if available, fallback to mock data
+  const initialMeals = dietSummary.meals.length > 0
+    ? dietSummary.meals.map(m => ({
+      id: m.id,
+      type: m.type,
+      time: m.time || '',
+      completed: m.completed,
+      foods: m.foods.map(f => ({ name: f.name, calories: f.calories, protein: f.protein, carbs: f.carbs, fat: f.fat }))
+    }))
+    : todayDiet.meals;
+
+  const [meals, setMeals] = useState(initialMeals);
   const [expandedMeal, setExpandedMeal] = useState<string | null>("m1");
-  const [waterIntake, setWaterIntake] = useState(todayDiet.water.consumed);
+  const [waterIntake, setWaterIntake] = useState(dietSummary.water.consumed || todayDiet.water.consumed);
   const [showFoodSearch, setShowFoodSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
+
+  // Use backend targets if available, fallback to mock
+  const targets = {
+    calories: dietSummary.targetCalories || todayDiet.targetCalories,
+    protein: dietSummary.protein.target || todayDiet.protein.target,
+    carbs: dietSummary.carbs.target || todayDiet.carbs.target,
+    fat: dietSummary.fat.target || todayDiet.fat.target,
+    water: dietSummary.water.target || todayDiet.water.target,
+  };
 
   const filteredFoods = indianFoods.filter(
     (food) =>
@@ -32,7 +57,7 @@ const Diet = memo(() => {
   );
 
   const addWater = () => {
-    if (waterIntake < todayDiet.water.target) {
+    if (waterIntake < targets.water) {
       setWaterIntake((prev) => prev + 1);
     }
   };
@@ -53,18 +78,18 @@ const Diet = memo(() => {
       prev.map((m) =>
         m.id === selectedMealId
           ? {
-              ...m,
-              foods: [
-                ...m.foods,
-                {
-                  name: food.name,
-                  calories: food.calories,
-                  protein: food.protein,
-                  carbs: food.carbs,
-                  fat: food.fat,
-                },
-              ],
-            }
+            ...m,
+            foods: [
+              ...m.foods,
+              {
+                name: food.name,
+                calories: food.calories,
+                protein: food.protein,
+                carbs: food.carbs,
+                fat: food.fat,
+              },
+            ],
+          }
           : m
       )
     );
@@ -107,7 +132,7 @@ const Diet = memo(() => {
             <MacroRing
               label="Calories"
               current={totalConsumed.calories}
-              target={todayDiet.targetCalories}
+              target={targets.calories}
               unit=""
               color="hsl(var(--fitness-orange))"
               size={70}
@@ -115,21 +140,21 @@ const Diet = memo(() => {
             <MacroRing
               label="Protein"
               current={totalConsumed.protein}
-              target={todayDiet.protein.target}
+              target={targets.protein}
               color="hsl(var(--fitness-purple))"
               size={70}
             />
             <MacroRing
               label="Carbs"
               current={totalConsumed.carbs}
-              target={todayDiet.carbs.target}
+              target={targets.carbs}
               color="hsl(var(--fitness-yellow))"
               size={70}
             />
             <MacroRing
               label="Fat"
               current={totalConsumed.fat}
-              target={todayDiet.fat.target}
+              target={targets.fat}
               color="hsl(var(--fitness-pink))"
               size={70}
             />
@@ -140,7 +165,7 @@ const Diet = memo(() => {
         <GlassCard className="mb-6 p-4">
           <WaterTracker
             current={waterIntake}
-            target={todayDiet.water.target}
+            target={targets.water}
             onAdd={addWater}
           />
         </GlassCard>
@@ -157,9 +182,8 @@ const Diet = memo(() => {
               <GlassCard className="overflow-hidden">
                 {/* Meal Header */}
                 <motion.div
-                  className={`flex cursor-pointer items-center justify-between p-4 ${
-                    meal.completed ? "bg-fitness-success/5" : ""
-                  }`}
+                  className={`flex cursor-pointer items-center justify-between p-4 ${meal.completed ? "bg-fitness-success/5" : ""
+                    }`}
                   onClick={() =>
                     setExpandedMeal(expandedMeal === meal.id ? null : meal.id)
                   }
@@ -172,11 +196,10 @@ const Diet = memo(() => {
                         e.stopPropagation();
                         toggleMealComplete(meal.id);
                       }}
-                      className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
-                        meal.completed
-                          ? "bg-fitness-success text-white"
-                          : "bg-muted text-muted-foreground"
-                      }`}
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${meal.completed
+                        ? "bg-fitness-success text-white"
+                        : "bg-muted text-muted-foreground"
+                        }`}
                     >
                       {meal.completed ? (
                         <Check className="h-5 w-5" />
@@ -185,10 +208,10 @@ const Diet = memo(() => {
                           {meal.type === "Breakfast"
                             ? "🍳"
                             : meal.type === "Lunch"
-                            ? "🍱"
-                            : meal.type === "Snacks"
-                            ? "🍎"
-                            : "🍽️"}
+                              ? "🍱"
+                              : meal.type === "Snacks"
+                                ? "🍎"
+                                : "🍽️"}
                         </span>
                       )}
                     </motion.button>
@@ -328,12 +351,11 @@ const Diet = memo(() => {
                       onClick={() =>
                         setSearchQuery(cat === "All" ? "" : cat.toLowerCase())
                       }
-                      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                        (cat === "All" && !searchQuery) ||
+                      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${(cat === "All" && !searchQuery) ||
                         searchQuery.toLowerCase() === cat.toLowerCase()
-                          ? "bg-fitness-orange text-white"
-                          : "bg-muted text-muted-foreground"
-                      }`}
+                        ? "bg-fitness-orange text-white"
+                        : "bg-muted text-muted-foreground"
+                        }`}
                     >
                       {cat}
                     </motion.button>
