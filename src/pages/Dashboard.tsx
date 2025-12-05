@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { GreetingHeader } from "@/components/dashboard/GreetingHeader";
 import { MembershipCard } from "@/components/dashboard/MembershipCard";
@@ -6,7 +7,7 @@ import { DietSummaryCard } from "@/components/dashboard/DietSummaryCard";
 import { QuickStatsRow } from "@/components/dashboard/QuickStatsRow";
 import { userData, todayWorkout, todayDiet } from "@/data/mockData";
 
-const Dashboard = () => {
+const Dashboard = memo(() => {
   const calculateDaysLeft = () => {
     const expiry = new Date(userData.planExpiry);
     const today = new Date();
@@ -71,6 +72,8 @@ const Dashboard = () => {
       </div>
     </PageTransition>
   );
-};
+});
+
+Dashboard.displayName = "Dashboard";
 
 export default Dashboard;

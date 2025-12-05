@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -17,7 +17,7 @@ import { WaterTracker } from "@/components/ui/WaterTracker";
 import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import { todayDiet, indianFoods } from "@/data/mockData";
 
-const Diet = () => {
+const Diet = memo(() => {
   const [meals, setMeals] = useState(todayDiet.meals);
   const [expandedMeal, setExpandedMeal] = useState<string | null>("m1");
   const [waterIntake, setWaterIntake] = useState(todayDiet.water.consumed);
@@ -376,6 +376,8 @@ const Diet = () => {
       </div>
     </PageTransition>
   );
-};
+});
+
+Diet.displayName = "Diet";
 
 export default Diet;

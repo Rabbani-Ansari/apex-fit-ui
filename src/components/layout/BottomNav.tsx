@@ -1,3 +1,4 @@
+import { memo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Home, Dumbbell, Utensils, TrendingUp, User } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -10,16 +11,11 @@ const navItems = [
   { path: "/profile", icon: User, label: "Profile" },
 ];
 
-export const BottomNav = () => {
+export const BottomNav = memo(() => {
   const location = useLocation();
 
   return (
-    <motion.nav
-      initial={{ y: 100 }}
-      animate={{ y: 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="fixed bottom-0 left-0 right-0 z-50 safe-bottom"
-    >
+    <nav className="fixed bottom-0 left-0 right-0 z-50 safe-bottom">
       <div className="mx-auto max-w-lg">
         <div className="mx-4 mb-4 overflow-hidden rounded-2xl border border-border/50 bg-card/80 shadow-2xl backdrop-blur-xl">
           <div className="flex items-center justify-around px-2 py-2">
@@ -31,13 +27,11 @@ export const BottomNav = () => {
                 <NavLink
                   key={item.path}
                   to={item.path}
-                  className="relative flex flex-1 flex-col items-center py-2"
+                  className="nav-tap-target relative flex flex-1 flex-col items-center py-2"
                 >
                   <motion.div
                     whileTap={{ scale: 0.9 }}
-                    className={`relative flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors ${
-                      isActive ? "" : "hover:bg-muted/50"
-                    }`}
+                    className="relative flex flex-col items-center gap-1 rounded-xl px-4 py-2 transition-colors"
                   >
                     {isActive && (
                       <motion.div
@@ -46,8 +40,8 @@ export const BottomNav = () => {
                         initial={false}
                         transition={{
                           type: "spring",
-                          stiffness: 400,
-                          damping: 30,
+                          stiffness: 500,
+                          damping: 35,
                         }}
                       />
                     )}
@@ -70,6 +64,8 @@ export const BottomNav = () => {
           </div>
         </div>
       </div>
-    </motion.nav>
+    </nav>
   );
-};
+});
+
+BottomNav.displayName = "BottomNav";
