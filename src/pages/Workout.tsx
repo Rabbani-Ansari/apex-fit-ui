@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo, useCallback } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import {
   Play,
@@ -63,7 +63,7 @@ const initializeExercises = (): Exercise[] => {
   }));
 };
 
-const Workout = () => {
+const Workout = memo(() => {
   const [exercises, setExercises] = useState<Exercise[]>(initializeExercises);
   const [currentExercise, setCurrentExercise] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
@@ -685,6 +685,8 @@ const Workout = () => {
       </div>
     </PageTransition>
   );
-};
+});
+
+Workout.displayName = "Workout";
 
 export default Workout;

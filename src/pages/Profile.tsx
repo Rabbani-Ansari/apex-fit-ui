@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { motion } from "framer-motion";
 import {
   User,
@@ -21,7 +21,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { userData, trainerData } from "@/data/mockData";
 import { Switch } from "@/components/ui/switch";
 
-const Profile = () => {
+const Profile = memo(() => {
   const [darkMode, setDarkMode] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [metricUnits, setMetricUnits] = useState(true);
@@ -281,6 +281,8 @@ const Profile = () => {
       </div>
     </PageTransition>
   );
-};
+});
+
+Profile.displayName = "Profile";
 
 export default Profile;

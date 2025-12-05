@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Scale,
@@ -22,7 +22,7 @@ import { progressData, userData } from "@/data/mockData";
 
 type TabType = "weight" | "workouts" | "diet" | "photos";
 
-const Progress = () => {
+const Progress = memo(() => {
   const [activeTab, setActiveTab] = useState<TabType>("weight");
 
   const tabs = [
@@ -339,6 +339,8 @@ const Progress = () => {
       </div>
     </PageTransition>
   );
-};
+});
+
+Progress.displayName = "Progress";
 
 export default Progress;
