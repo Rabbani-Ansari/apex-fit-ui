@@ -74,73 +74,32 @@
     @apply border-border;
   }
 
-  /* Mobile-native behavior */
   html {
-    scroll-behavior: auto;
+    scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    touch-action: manipulation;
-    height: 100%;
   }
 
   body {
     @apply bg-background text-foreground font-inter antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
-    -webkit-user-select: none;
-    user-select: none;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
   }
 
-  #root {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+  /* Mobile-native behavior - only disable text selection on non-input elements */
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
-  /* Allow text selection only in inputs/textareas */
   input, textarea, [contenteditable="true"] {
     -webkit-user-select: text;
     user-select: text;
   }
-
-  /* Remove default focus rings */
-  *:focus {
-    outline: none;
-  }
-
-  button {
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
 }
 
 @layer components {
-  /* App container */
-  .app-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-  }
-
-  /* Tab container */
-  .tab-container {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Tab panel */
-  .tab-panel {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-  }
-
   /* Native-like tap feedback */
   .nav-tap-target {
     min-height: 44px;
@@ -309,20 +268,5 @@
   /* Text shadow for contrast */
   .text-shadow {
     text-shadow: 0 2px 10px hsl(0 0% 0% / 0.3);
-  }
-
-  /* GPU acceleration */
-  .gpu-accelerated {
-    transform: translateZ(0);
-    will-change: transform;
-    backface-visibility: hidden;
-  }
-}
-
-/* Hide focus outlines in WebView */
-@media (pointer: coarse) {
-  *:focus,
-  *:focus-visible {
-    outline: none !important;
   }
 }
