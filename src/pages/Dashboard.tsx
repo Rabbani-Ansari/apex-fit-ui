@@ -75,10 +75,10 @@ const Dashboard = memo(() => {
                 id: m.id,
                 type: m.type,
                 time: m.time,
-                completed: m.completed,
+                completed: false,
               }))}
               calories={{
-                consumed: dietSummary.consumedCalories,
+                consumed: 0,
                 target: dietSummary.targetCalories,
               }}
               protein={dietSummary.protein}

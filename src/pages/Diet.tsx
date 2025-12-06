@@ -1,13 +1,9 @@
-import { useState, memo, useCallback, useMemo } from "react";
+import { useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
   ChevronUp,
   Check,
-  Plus,
-  Search,
-  X,
-  Camera,
   Clock,
   Loader2,
 } from "lucide-react";
@@ -15,93 +11,38 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { MacroRing } from "@/components/ui/MacroRing";
 import { WaterTracker } from "@/components/ui/WaterTracker";
-import { AnimatedButton } from "@/components/ui/AnimatedButton";
 import { useDietSummary } from "@/hooks/useDiet";
-import { todayDiet, indianFoods } from "@/data/mockData";
 
 const Diet = memo(() => {
-  // Fetch diet data from Supabase
-  const dietSummary = useDietSummary();
-
-  // Use backend meals if available, fallback to mock data
-  const initialMeals = dietSummary.meals.length > 0
-    ? dietSummary.meals.map(m => ({
-      id: m.id,
-      type: m.type,
-      time: m.time || '',
-      completed: m.completed,
-      foods: m.foods.map(f => ({ name: f.name, calories: f.calories, protein: f.protein, carbs: f.carbs, fat: f.fat }))
-    }))
-    : todayDiet.meals;
-
-  const [meals, setMeals] = useState(initialMeals);
-  const [expandedMeal, setExpandedMeal] = useState<string | null>("m1");
-  const [waterIntake, setWaterIntake] = useState(dietSummary.water.consumed || todayDiet.water.consumed);
-  const [showFoodSearch, setShowFoodSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
-
-  // Use backend targets if available, fallback to mock
-  const targets = {
-    calories: dietSummary.targetCalories || todayDiet.targetCalories,
-    protein: dietSummary.protein.target || todayDiet.protein.target,
-    carbs: dietSummary.carbs.target || todayDiet.carbs.target,
-    fat: dietSummary.fat.target || todayDiet.fat.target,
-    water: dietSummary.water.target || todayDiet.water.target,
-  };
-
-  const filteredFoods = indianFoods.filter(
-    (food) =>
-      food.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      food.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const { isLoading, plan, meals, targetCalories, protein, carbs, fat, water } = useDietSummary();
+  
+  const [expandedMeal, setExpandedMeal] = useState<string | null>(meals[0]?.id || null);
+  const [waterIntake, setWaterIntake] = useState(0);
+  const [completedMeals, setCompletedMeals] = useState<Set<string>>(new Set());
 
   const addWater = () => {
-    if (waterIntake < targets.water) {
+    if (waterIntake < water.target) {
       setWaterIntake((prev) => prev + 1);
     }
   };
 
   const toggleMealComplete = (mealId: string) => {
-    setMeals((prev) =>
-      prev.map((m) => (m.id === mealId ? { ...m, completed: !m.completed } : m))
-    );
-  };
-
-  const openFoodSearch = (mealId: string) => {
-    setSelectedMealId(mealId);
-    setShowFoodSearch(true);
-  };
-
-  const addFoodToMeal = (food: (typeof indianFoods)[0]) => {
-    setMeals((prev) =>
-      prev.map((m) =>
-        m.id === selectedMealId
-          ? {
-            ...m,
-            foods: [
-              ...m.foods,
-              {
-                name: food.name,
-                calories: food.calories,
-                protein: food.protein,
-                carbs: food.carbs,
-                fat: food.fat,
-              },
-            ],
-          }
-          : m
-      )
-    );
-    setShowFoodSearch(false);
-    setSearchQuery("");
+    setCompletedMeals(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(mealId)) {
+        newSet.delete(mealId);
+      } else {
+        newSet.add(mealId);
+      }
+      return newSet;
+    });
   };
 
   const totalConsumed = meals.reduce(
     (acc, meal) => {
-      if (!meal.completed) return acc;
+      if (!completedMeals.has(meal.id)) return acc;
+      acc.calories += meal.calories;
       meal.foods.forEach((food) => {
-        acc.calories += food.calories;
         acc.protein += food.protein;
         acc.carbs += food.carbs;
         acc.fat += food.fat;
@@ -111,19 +52,49 @@ const Diet = memo(() => {
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );
 
+  if (isLoading) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </PageTransition>
+    );
+  }
+
+  if (!plan) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen bg-background p-4">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <h1 className="text-2xl font-bold text-foreground">Diet Plan</h1>
+            <p className="text-muted-foreground">Your assigned nutrition plan</p>
+          </motion.div>
+          
+          <GlassCard className="p-6 text-center">
+            <p className="text-muted-foreground">No diet plan assigned yet.</p>
+            <p className="text-sm text-muted-foreground mt-2">Contact your trainer to get a personalized diet plan.</p>
+          </GlassCard>
+        </div>
+      </PageTransition>
+    );
+  }
+
   return (
     <PageTransition>
-      <div className="min-h-screen bg-background p-4">
+      <div className="min-h-screen bg-background p-4 pb-24">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h1 className="text-2xl font-bold text-foreground">Diet Logger</h1>
-          <p className="text-muted-foreground">
-            Track your meals and nutrition
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">{plan.name}</h1>
+          <p className="text-muted-foreground">{plan.description || 'Your assigned nutrition plan'}</p>
         </motion.div>
 
         {/* Macro Overview */}
@@ -132,7 +103,7 @@ const Diet = memo(() => {
             <MacroRing
               label="Calories"
               current={totalConsumed.calories}
-              target={targets.calories}
+              target={targetCalories}
               unit=""
               color="hsl(var(--fitness-orange))"
               size={70}
@@ -140,21 +111,21 @@ const Diet = memo(() => {
             <MacroRing
               label="Protein"
               current={totalConsumed.protein}
-              target={targets.protein}
+              target={protein.target}
               color="hsl(var(--fitness-purple))"
               size={70}
             />
             <MacroRing
               label="Carbs"
               current={totalConsumed.carbs}
-              target={targets.carbs}
+              target={carbs.target}
               color="hsl(var(--fitness-yellow))"
               size={70}
             />
             <MacroRing
               label="Fat"
               current={totalConsumed.fat}
-              target={targets.fat}
+              target={fat.target}
               color="hsl(var(--fitness-pink))"
               size={70}
             />
@@ -165,10 +136,32 @@ const Diet = memo(() => {
         <GlassCard className="mb-6 p-4">
           <WaterTracker
             current={waterIntake}
-            target={targets.water}
+            target={water.target}
             onAdd={addWater}
           />
         </GlassCard>
+
+        {/* Special Instructions */}
+        {plan.special_instructions && (
+          <GlassCard className="mb-6 p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-2">Special Instructions</h3>
+            <p className="text-sm text-muted-foreground">{plan.special_instructions}</p>
+          </GlassCard>
+        )}
+
+        {/* Supplements */}
+        {plan.supplements && plan.supplements.length > 0 && (
+          <GlassCard className="mb-6 p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-2">Supplements</h3>
+            <div className="flex flex-wrap gap-2">
+              {plan.supplements.map((supplement, idx) => (
+                <span key={idx} className="px-3 py-1 bg-muted rounded-full text-xs text-muted-foreground">
+                  {supplement}
+                </span>
+              ))}
+            </div>
+          </GlassCard>
+        )}
 
         {/* Meals */}
         <div className="space-y-3">
@@ -182,11 +175,8 @@ const Diet = memo(() => {
               <GlassCard className="overflow-hidden">
                 {/* Meal Header */}
                 <motion.div
-                  className={`flex cursor-pointer items-center justify-between p-4 ${meal.completed ? "bg-fitness-success/5" : ""
-                    }`}
-                  onClick={() =>
-                    setExpandedMeal(expandedMeal === meal.id ? null : meal.id)
-                  }
+                  className={`flex cursor-pointer items-center justify-between p-4 ${completedMeals.has(meal.id) ? "bg-fitness-success/5" : ""}`}
+                  onClick={() => setExpandedMeal(expandedMeal === meal.id ? null : meal.id)}
                   whileTap={{ scale: 0.99 }}
                 >
                   <div className="flex items-center gap-3">
@@ -196,39 +186,43 @@ const Diet = memo(() => {
                         e.stopPropagation();
                         toggleMealComplete(meal.id);
                       }}
-                      className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${meal.completed
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${completedMeals.has(meal.id)
                         ? "bg-fitness-success text-white"
                         : "bg-muted text-muted-foreground"
-                        }`}
+                      }`}
                     >
-                      {meal.completed ? (
+                      {completedMeals.has(meal.id) ? (
                         <Check className="h-5 w-5" />
                       ) : (
                         <span className="text-lg">
-                          {meal.type === "Breakfast"
+                          {meal.type === "breakfast"
                             ? "🍳"
-                            : meal.type === "Lunch"
+                            : meal.type === "lunch"
                               ? "🍱"
-                              : meal.type === "Snacks"
+                              : meal.type === "snack"
                                 ? "🍎"
-                                : "🍽️"}
+                                : meal.type === "dinner"
+                                  ? "🍽️"
+                                  : "🥗"}
                         </span>
                       )}
                     </motion.button>
                     <div>
-                      <h3 className="font-semibold text-foreground">
+                      <h3 className="font-semibold text-foreground capitalize">
                         {meal.type}
                       </h3>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {meal.time}
-                      </div>
+                      {meal.time && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {meal.time}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-muted-foreground">
-                      {meal.foods.reduce((a, f) => a + f.calories, 0)} cal
+                      {meal.calories} cal
                     </span>
                     {expandedMeal === meal.id ? (
                       <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -261,8 +255,7 @@ const Diet = memo(() => {
                                 {food.name}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                P: {food.protein}g • C: {food.carbs}g • F:{" "}
-                                {food.fat}g
+                                P: {food.protein}g • C: {food.carbs}g • F: {food.fat}g
                               </p>
                             </div>
                             <span className="text-sm font-semibold text-fitness-orange">
@@ -270,25 +263,6 @@ const Diet = memo(() => {
                             </span>
                           </motion.div>
                         ))}
-
-                        <div className="flex gap-2 pt-2">
-                          <AnimatedButton
-                            variant="secondary"
-                            size="sm"
-                            className="flex-1"
-                            icon={<Plus className="h-4 w-4" />}
-                            onClick={() => openFoodSearch(meal.id)}
-                          >
-                            Add Food
-                          </AnimatedButton>
-                          <AnimatedButton
-                            variant="ghost"
-                            size="sm"
-                            icon={<Camera className="h-4 w-4" />}
-                          >
-                            Photo
-                          </AnimatedButton>
-                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -297,104 +271,6 @@ const Diet = memo(() => {
             </motion.div>
           ))}
         </div>
-
-        {/* Food Search Modal */}
-        <AnimatePresence>
-          {showFoodSearch && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm"
-            >
-              <div className="flex h-full flex-col p-4">
-                {/* Search Header */}
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Search Indian foods..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      autoFocus
-                      className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-fitness-orange"
-                    />
-                  </div>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => {
-                      setShowFoodSearch(false);
-                      setSearchQuery("");
-                    }}
-                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground"
-                  >
-                    <X className="h-5 w-5" />
-                  </motion.button>
-                </div>
-
-                {/* Category Pills */}
-                <div className="mb-4 flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-                  {[
-                    "All",
-                    "Protein",
-                    "Dal",
-                    "Grain",
-                    "Vegetable",
-                    "Fruit",
-                    "Dairy",
-                    "Dish",
-                  ].map((cat) => (
-                    <motion.button
-                      key={cat}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() =>
-                        setSearchQuery(cat === "All" ? "" : cat.toLowerCase())
-                      }
-                      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${(cat === "All" && !searchQuery) ||
-                        searchQuery.toLowerCase() === cat.toLowerCase()
-                        ? "bg-fitness-orange text-white"
-                        : "bg-muted text-muted-foreground"
-                        }`}
-                    >
-                      {cat}
-                    </motion.button>
-                  ))}
-                </div>
-
-                {/* Food List */}
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  {filteredFoods.slice(0, 30).map((food, index) => (
-                    <motion.div
-                      key={food.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => addFoodToMeal(food)}
-                      className="flex cursor-pointer items-center justify-between rounded-xl bg-card p-4 transition-colors hover:bg-muted"
-                    >
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {food.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          P: {food.protein}g • C: {food.carbs}g • F: {food.fat}g
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-lg font-bold text-fitness-orange">
-                          {food.calories}
-                        </span>
-                        <p className="text-xs text-muted-foreground">cal</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </PageTransition>
   );

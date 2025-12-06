@@ -1,14 +1,60 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { DietPlan, DietMeal, DietAssignment } from '@/types/database';
 
-interface DietPlanWithMeals extends DietPlan {
-    meals: DietMeal[];
+// Match actual database schema
+interface DietMealItem {
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    quantity?: string;
 }
 
-interface DietAssignmentWithPlan extends DietAssignment {
-    diet_plan: DietPlanWithMeals;
+interface DbDietMeal {
+    id: string;
+    diet_plan_id: string;
+    meal_time: string;
+    items: DietMealItem[];
+    created_at: string;
+}
+
+interface DbDietPlan {
+    id: string;
+    name: string;
+    trainer_id: string | null;
+    category: string;
+    diet_goal: string;
+    diet_type: string;
+    target_calories: number;
+    duration: number;
+    description: string | null;
+    thumbnail: string | null;
+    water_intake: number | null;
+    supplements: string[] | null;
+    special_instructions: string | null;
+    macros_calories: number;
+    macros_protein: number;
+    macros_carbs: number;
+    macros_fat: number;
+    created_at: string;
+    updated_at: string;
+    meals: DbDietMeal[];
+}
+
+interface DbDietAssignment {
+    id: string;
+    diet_plan_id: string;
+    member_id: string;
+    start_date: string;
+    end_date: string;
+    status: string;
+    notify_email: boolean;
+    notify_sms: boolean;
+    notify_whatsapp: boolean;
+    created_at: string;
+    diet_plan: DbDietPlan;
 }
 
 export function useDietPlan() {
@@ -16,107 +62,106 @@ export function useDietPlan() {
 
     return useQuery({
         queryKey: ['diet-plan', member?.id],
-        queryFn: async (): Promise<DietAssignmentWithPlan | null> => {
+        queryFn: async (): Promise<DbDietAssignment | null> => {
             if (!member?.id) return null;
 
             const { data, error } = await supabase
                 .from('diet_assignments')
                 .select(`
-          *,
-          diet_plan:diet_plans(
-            *,
-            meals:diet_meals(*)
-          )
-        `)
+                    *,
+                    diet_plan:diet_plans(
+                        *,
+                        meals:diet_meals(*)
+                    )
+                `)
                 .eq('member_id', member.id)
                 .eq('status', 'active')
-                .order('assigned_at', { ascending: false })
+                .order('created_at', { ascending: false })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (error) {
-                if (error.code === 'PGRST116') {
-                    // No rows returned
-                    return null;
-                }
                 console.error('Error fetching diet plan:', error);
                 return null;
             }
 
-            // Sort meals by order_index
-            const assignment = data as DietAssignmentWithPlan;
-            return {
-                ...assignment,
-                diet_plan: {
-                    ...assignment.diet_plan,
-                    meals: assignment.diet_plan.meals.sort((a, b) => a.order_index - b.order_index),
-                },
-            };
+            return data as DbDietAssignment | null;
         },
         enabled: !!member?.id,
         staleTime: 1000 * 60 * 5,
     });
 }
 
-// Calculate today's diet summary (calories, macros consumed)
+// Transformed meal for frontend use
+interface MealData {
+    id: string;
+    type: string;
+    time: string;
+    calories: number;
+    foods: DietMealItem[];
+}
+
+// Calculate today's diet summary
 export function useDietSummary() {
     const { member } = useAuth();
     const { data: dietAssignment, isLoading: queryLoading } = useDietPlan();
 
-    // Only show loading if we have a member and the query is actually loading
     const isLoading = !!member?.id && queryLoading;
 
     if (!dietAssignment || isLoading) {
         return {
             isLoading,
+            plan: null,
             targetCalories: 0,
-            consumedCalories: 0,
             protein: { target: 0, consumed: 0 },
             carbs: { target: 0, consumed: 0 },
             fat: { target: 0, consumed: 0 },
             water: { target: 8, consumed: 0 },
-            meals: [],
+            meals: [] as MealData[],
         };
     }
 
     const plan = dietAssignment.diet_plan;
 
-    // Calculate totals from meal items
-    let totalCalories = 0;
-    let totalProtein = 0;
-    let totalCarbs = 0;
-    let totalFat = 0;
-
-    const meals = plan.meals.map((meal) => {
+    // Transform meals from database
+    const meals: MealData[] = plan.meals.map((meal) => {
         const mealCalories = meal.items.reduce((sum, item) => sum + item.calories, 0);
-        const mealProtein = meal.items.reduce((sum, item) => sum + item.protein, 0);
-        const mealCarbs = meal.items.reduce((sum, item) => sum + item.carbs, 0);
-        const mealFat = meal.items.reduce((sum, item) => sum + item.fat, 0);
-
-        totalCalories += mealCalories;
-        totalProtein += mealProtein;
-        totalCarbs += mealCarbs;
-        totalFat += mealFat;
-
+        
         return {
             id: meal.id,
             type: meal.meal_time,
-            time: meal.time_label || '',
-            foods: meal.items,
+            time: getMealTimeLabel(meal.meal_time),
             calories: mealCalories,
-            completed: false, // TODO: Track meal completion
+            foods: meal.items,
         };
     });
 
+    // Sort meals by meal time order
+    const mealOrder = ['breakfast', 'morning_snack', 'lunch', 'afternoon_snack', 'snack', 'dinner', 'evening_snack'];
+    meals.sort((a, b) => mealOrder.indexOf(a.type) - mealOrder.indexOf(b.type));
+
     return {
         isLoading: false,
-        targetCalories: plan.target_calories || 2000,
-        consumedCalories: 0, // TODO: Track actual consumption
-        protein: { target: plan.protein_target || 150, consumed: 0 },
-        carbs: { target: plan.carbs_target || 200, consumed: 0 },
-        fat: { target: plan.fat_target || 60, consumed: 0 },
-        water: { target: plan.water_target || 8, consumed: 0 },
-        meals,
         plan,
+        targetCalories: plan.target_calories || plan.macros_calories || 2000,
+        protein: { target: plan.macros_protein || 150, consumed: 0 },
+        carbs: { target: plan.macros_carbs || 200, consumed: 0 },
+        fat: { target: plan.macros_fat || 60, consumed: 0 },
+        water: { target: plan.water_intake || 8, consumed: 0 },
+        meals,
     };
+}
+
+// Helper to get readable time label for meal type
+function getMealTimeLabel(mealTime: string): string {
+    const labels: Record<string, string> = {
+        breakfast: '7:00 - 9:00 AM',
+        morning_snack: '10:30 AM',
+        lunch: '12:30 - 2:00 PM',
+        afternoon_snack: '4:00 PM',
+        snack: '4:00 - 5:00 PM',
+        dinner: '7:00 - 9:00 PM',
+        evening_snack: '9:30 PM',
+    };
+    return labels[mealTime] || '';
 }
