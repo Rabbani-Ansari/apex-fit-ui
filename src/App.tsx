@@ -30,20 +30,19 @@ const queryClient = new QueryClient({
 
 // Protected Route Wrapper
 const ProtectedRoute = memo(({ children }: { children: React.ReactNode }) => {
-  const { user, member, isLoading, isLoggedOut } = useAuth();
+  const { user, isLoading } = useAuth();
 
-  // Redirect to login if user explicitly logged out
-  if (isLoggedOut) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // While loading auth, show nothing (brief flash)
+  // While loading auth, show a brief loading state
   if (isLoading) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
-  // If no user and no member, redirect to login
-  if (!user && !member) {
+  // If no user, redirect to login
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
