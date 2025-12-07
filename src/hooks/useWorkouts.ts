@@ -79,7 +79,37 @@ export function useWorkouts() {
     return useQuery({
         queryKey: ['workouts', member?.id],
         queryFn: async (): Promise<DbWorkoutAssignment[]> => {
-            if (!member?.id) return [];
+            // ==== DEBUG: Query ALL workout_assignments without filters ====
+            const { data: allAssignments, error: debugError } = await (supabase as any)
+                .from('workout_assignments')
+                .select('id, member_id, workout_id, status, assigned_at')
+                .limit(10);
+
+            console.log('🔍 [DEBUG] ALL workout_assignments (no filter):', allAssignments);
+            console.log('🔍 [DEBUG] Error if any:', debugError);
+
+            // ==== DEBUG: Query ALL workouts ====
+            const { data: allWorkouts } = await (supabase as any)
+                .from('workouts')
+                .select('id, name')
+                .limit(5);
+            console.log('🔍 [DEBUG] ALL workouts (no filter):', allWorkouts);
+
+            // ==== DEBUG: Query members table ====
+            const { data: allMembers } = await (supabase as any)
+                .from('members')
+                .select('id, name, auth_id')
+                .limit(5);
+            console.log('🔍 [DEBUG] ALL members (no filter):', allMembers);
+            // ==== END DEBUG ====
+
+            if (!member?.id) {
+                console.log('🔍 [useWorkouts] No member ID found, returning empty array');
+                return [];
+            }
+
+            console.log('🔍 [useWorkouts] Current member ID from auth:', member.id);
+            console.log('🔍 [useWorkouts] Looking for assignments with this member_id and status=active');
 
             const { data, error } = await supabase
                 .from('workout_assignments')
@@ -99,6 +129,9 @@ export function useWorkouts() {
                 console.error('Error fetching workouts:', error);
                 return [];
             }
+
+            console.log('🔍 [useWorkouts] Filtered results for member:', data);
+            console.log('🔍 [useWorkouts] Number of assignments found:', data?.length);
 
             // Sort exercises by order_index
             return (data as DbWorkoutAssignment[]).map(assignment => ({
@@ -136,8 +169,12 @@ export function useTodayWorkout() {
     // Only show loading if we have a member and the query is actually loading
     const isLoading = !!member?.id && queryLoading;
 
+    console.log('🔍 [useTodayWorkout] Workouts array:', workouts);
+    console.log('🔍 [useTodayWorkout] First assignment:', workouts?.[0]);
+
     // Transform database workout to frontend format
     const rawWorkout = workouts?.[0]?.workout ?? null;
+    console.log('🔍 [useTodayWorkout] Raw workout:', rawWorkout);
     const transformedWorkout: WorkoutData | null = rawWorkout ? {
         id: rawWorkout.id,
         name: rawWorkout.name,

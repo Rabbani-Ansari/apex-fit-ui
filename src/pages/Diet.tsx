@@ -15,7 +15,7 @@ import { useDietSummary } from "@/hooks/useDiet";
 
 const Diet = memo(() => {
   const { isLoading, plan, meals, targetCalories, protein, carbs, fat, water } = useDietSummary();
-  
+
   const [expandedMeal, setExpandedMeal] = useState<string | null>(meals[0]?.id || null);
   const [waterIntake, setWaterIntake] = useState(0);
   const [completedMeals, setCompletedMeals] = useState<Set<string>>(new Set());
@@ -74,7 +74,7 @@ const Diet = memo(() => {
             <h1 className="text-2xl font-bold text-foreground">Diet Plan</h1>
             <p className="text-muted-foreground">Your assigned nutrition plan</p>
           </motion.div>
-          
+
           <GlassCard className="p-6 text-center">
             <p className="text-muted-foreground">No diet plan assigned yet.</p>
             <p className="text-sm text-muted-foreground mt-2">Contact your trainer to get a personalized diet plan.</p>
@@ -94,7 +94,7 @@ const Diet = memo(() => {
           className="mb-6"
         >
           <h1 className="text-2xl font-bold text-foreground">{plan.name}</h1>
-          <p className="text-muted-foreground">{plan.description || 'Your assigned nutrition plan'}</p>
+          <p className="text-muted-foreground">Your assigned nutrition plan</p>
         </motion.div>
 
         {/* Macro Overview */}
@@ -189,7 +189,7 @@ const Diet = memo(() => {
                       className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${completedMeals.has(meal.id)
                         ? "bg-fitness-success text-white"
                         : "bg-muted text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       {completedMeals.has(meal.id) ? (
                         <Check className="h-5 w-5" />

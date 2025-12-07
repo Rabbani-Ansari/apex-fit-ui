@@ -28,7 +28,6 @@ import { ExerciseVideoToggle } from "@/components/workout/ExerciseVideoToggle";
 import { VoiceCoachingToggle } from "@/components/workout/VoiceCoachingToggle";
 import { useVoiceCoaching } from "@/hooks/useVoiceCoaching";
 import { useTodayWorkout } from "@/hooks/useWorkouts";
-import { todayWorkout as mockTodayWorkout, lastWorkoutData } from "@/data/mockData";
 
 interface SetData {
   setNumber: number;
@@ -51,15 +50,32 @@ interface Exercise {
   setData: SetData[];
 }
 
-const initializeExercises = (workoutData: typeof mockTodayWorkout): Exercise[] => {
-  return workoutData.exercises.map((e) => ({
-    ...e,
+// Default/empty workout for when no workout is assigned
+const defaultWorkout = {
+  name: "No Workout Assigned",
+  duration: 0,
+  calories: 0,
+  muscleGroups: [],
+  exercises: [],
+};
+
+const initializeExercises = (workoutExercises: any[]): Exercise[] => {
+  return workoutExercises.map((e) => ({
+    id: e.id,
+    name: e.name,
+    sets: e.sets,
+    reps: e.reps,
+    weight: e.weight || 0,
+    restTime: e.rest_time || 60,
+    completed: false,
+    animation: e.animation_type || 'bench-press',
+    animationUrl: e.animation_url,
     setData: Array(e.sets)
       .fill(0)
       .map((_, i) => ({
         setNumber: i + 1,
         reps: e.reps,
-        weight: e.weight,
+        weight: e.weight || 0,
         rpe: null,
         completed: false,
       })),
@@ -70,27 +86,19 @@ const Workout = memo(() => {
   // Fetch workout from Supabase
   const { workout: backendWorkout, isLoading } = useTodayWorkout();
 
-  // Use backend workout if available, otherwise use mock data
-  const todayWorkout = backendWorkout ? {
-    ...mockTodayWorkout,
-    name: backendWorkout.name,
-    duration: backendWorkout.duration || mockTodayWorkout.duration,
-    calories: backendWorkout.calories || mockTodayWorkout.calories,
-    muscleGroups: backendWorkout.muscle_groups || mockTodayWorkout.muscleGroups,
-    exercises: backendWorkout.exercises?.map(e => ({
-      id: e.id,
-      name: e.name,
-      sets: e.sets,
-      reps: e.reps,
-      weight: e.weight || 0,
-      restTime: e.rest_time || 60,
-      completed: false,
-      animation: e.animation_type || 'bench-press',
-      animationUrl: e.animation_url, // Lottie JSON URL from database
-    })) || mockTodayWorkout.exercises,
-  } : mockTodayWorkout;
+  console.log('🔍 [Workout.tsx] Backend workout:', backendWorkout);
+  console.log('🔍 [Workout.tsx] Is loading:', isLoading);
 
-  const [exercises, setExercises] = useState<Exercise[]>(() => initializeExercises(todayWorkout));
+  // Use backend workout data only, no mock data
+  const todayWorkout = backendWorkout ? {
+    name: backendWorkout.name,
+    duration: backendWorkout.duration || 0,
+    calories: backendWorkout.calories || 0,
+    muscleGroups: backendWorkout.muscle_groups || [],
+    exercises: backendWorkout.exercises || [],
+  } : defaultWorkout;
+
+  const [exercises, setExercises] = useState<Exercise[]>(() => initializeExercises(todayWorkout.exercises));
   const [currentExercise, setCurrentExercise] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
   const [isResting, setIsResting] = useState(false);
@@ -252,7 +260,7 @@ const Workout = memo(() => {
     setCurrentExercise(0);
     setCurrentSet(1);
     setTotalTime(0);
-    setExercises(initializeExercises(todayWorkout));
+    setExercises(initializeExercises(todayWorkout.exercises));
     setWorkoutNotes("");
   };
 
@@ -260,20 +268,9 @@ const Workout = memo(() => {
     toast.success("Workout shared!");
   };
 
-  // Calculate personal records (mock)
+  // Calculate personal records (TODO: fetch from workout_logs)
   const getPersonalRecords = () => {
-    const records: { exercise: string; type: string; value: string }[] = [];
-    exercises.forEach((e) => {
-      const lastData = lastWorkoutData[e.id];
-      if (lastData && e.weight > lastData.weight) {
-        records.push({
-          exercise: e.name,
-          type: "weight",
-          value: `${e.weight}kg (+${e.weight - lastData.weight}kg)`,
-        });
-      }
-    });
-    return records;
+    return []; // Empty until we implement workout_logs comparison
   };
 
   if (!isWorkoutStarted) {
@@ -400,7 +397,7 @@ const Workout = memo(() => {
   }
 
   const activeExercise = exercises[currentExercise];
-  const lastWorkout = lastWorkoutData[activeExercise.id] || null;
+  const lastWorkout = null; // TODO: Fetch from workout_logs table
 
   return (
     <PageTransition>

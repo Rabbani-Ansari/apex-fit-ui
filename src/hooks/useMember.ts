@@ -1,19 +1,27 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Member } from '@/types/database';
+import type { Member, GymBranding } from '@/types/database';
+
+// Extended member type with gym info
+export interface MemberWithGym extends Member {
+    gym?: GymBranding | null;
+}
 
 export function useMember() {
     const { member: authMember } = useAuth();
 
     return useQuery({
         queryKey: ['member', authMember?.id],
-        queryFn: async (): Promise<Member | null> => {
+        queryFn: async (): Promise<MemberWithGym | null> => {
             if (!authMember?.id) return null;
 
             const { data, error } = await supabase
                 .from('members')
-                .select('*')
+                .select(`
+                    *,
+                    gym:gym_branding(*)
+                `)
                 .eq('id', authMember.id)
                 .single();
 
@@ -22,7 +30,8 @@ export function useMember() {
                 return null;
             }
 
-            return data as Member;
+            console.log('🔍 [useMember] Member with gym data:', data);
+            return data as MemberWithGym;
         },
         enabled: !!authMember?.id,
         staleTime: 1000 * 60 * 5, // 5 minutes

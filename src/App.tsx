@@ -84,7 +84,7 @@ const AppContent = memo(() => {
   }, []);
 
   return (
-    <div className="app-container min-h-screen bg-background">
+    <div className="app-container min-h-screen bg-background pb-24">
       <AppRoutes />
       {/* Show bottom nav on all pages except login */}
       {!isLoginPage && <BottomNav />}

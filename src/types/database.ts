@@ -37,6 +37,8 @@ export interface Trainer {
 
 export interface Member {
     id: string;
+    auth_id: string | null;
+    gym_id: string | null;
     name: string;
     phone: string;
     email: string;
@@ -343,4 +345,19 @@ export interface Database {
             [_ in never]: never;
         };
     };
+}
+
+// Notification types
+export type NotificationType = 'workout' | 'diet' | 'membership' | 'achievement' | 'announcement';
+
+export interface MemberNotification {
+    id: string;
+    member_id: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    icon: string;
+    action_url: string | null;
+    is_read: boolean;
+    created_at: string;
 }

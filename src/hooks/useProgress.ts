@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import type { MemberMeasurement, ProgressPhoto, MemberMilestone } from '@/types/database';
@@ -123,4 +123,96 @@ export function useWeightProgress() {
         latestWeight,
         weightChange,
     };
+}
+
+// Upload progress photo
+export function useUploadProgressPhoto() {
+    const { member } = useAuth();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ file, date, notes }: { file: File; date: Date; notes?: string }) => {
+            if (!member?.id) throw new Error('No member found');
+
+            // Get authenticated user ID (must match storage RLS policy)
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            if (authError || !user) throw new Error('Not authenticated');
+
+            // 1. Upload to Storage using auth.uid() for folder (matches RLS policy)
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.floor(Date.now() / 1000)}_${file.name.replace(/[^a-zA-Z0-9]/g, '')}.${fileExt}`;
+            const filePath = `${user.id}/${fileName}`; // Use auth user ID, not member ID
+
+            const { error: uploadError } = await supabase.storage
+                .from('progress-photos')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            // 2. Get Public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('progress-photos')
+                .getPublicUrl(filePath);
+
+            // 3. Insert into Database
+            const { error: dbError } = await supabase
+                .from('progress_photos')
+                .insert({
+                    member_id: member.id,
+                    photo_url: publicUrl,
+                    date: date.toISOString().split('T')[0], // YYYY-MM-DD
+                    notes: notes || null,
+                } as any);
+
+            if (dbError) throw dbError;
+
+            return true;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['progress-photos'] });
+        },
+    });
+}
+
+// Delete progress photo
+export function useDeleteProgressPhoto() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (photoId: string) => {
+            // First get the photo URL to delete from storage
+            const { data: photo, error: fetchError } = await supabase
+                .from('progress_photos')
+                .select('photo_url')
+                .eq('id', photoId)
+                .single();
+
+            if (fetchError) throw fetchError;
+            if (!photo) throw new Error('Photo not found');
+
+            // Delete from database first
+            const { error: dbError } = await supabase
+                .from('progress_photos')
+                .delete()
+                .eq('id', photoId);
+
+            if (dbError) throw dbError;
+
+            // Try to delete from storage (extract path from URL)
+            // URL format: .../storage/v1/object/public/progress-photos/member_id/filename
+            const photoData = photo as any;
+            const pathParts = photoData.photo_url.split('/progress-photos/');
+            if (pathParts.length > 1) {
+                const storagePath = pathParts[1];
+                await supabase.storage
+                    .from('progress-photos')
+                    .remove([storagePath]);
+            }
+
+            return true;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['progress-photos'] });
+        },
+    });
 }

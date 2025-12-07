@@ -1,5 +1,5 @@
 import { useState, memo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Scale,
   Dumbbell,
@@ -20,7 +20,7 @@ import {
 } from "recharts";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { useWeightProgress, useMilestones, useProgressPhotos } from "@/hooks/useProgress";
+import { useWeightProgress, useMilestones, useProgressPhotos, useUploadProgressPhoto, useDeleteProgressPhoto } from "@/hooks/useProgress";
 import { useAttendanceStats, useAttendance } from "@/hooks/useAttendance";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -34,8 +34,9 @@ const Progress = memo(() => {
   const { chartData, latestWeight, weightChange, isLoading: weightLoading } = useWeightProgress();
   const { currentStreak, monthlyCount, attendanceCalendar, isLoading: attendanceLoading } = useAttendanceStats();
   const { data: milestones, isLoading: milestonesLoading } = useMilestones();
-  const { data: photos, isLoading: photosLoading } = useProgressPhotos();
-  const { data: attendanceData } = useAttendance();
+  /* -------------------------------------------------------------------------- */
+  /*                             Photos Tab Logic                               */
+  /* -------------------------------------------------------------------------- */
 
   const tabs = [
     { id: "weight" as const, label: "Weight", icon: Scale },
@@ -43,6 +44,62 @@ const Progress = memo(() => {
     { id: "diet" as const, label: "Diet", icon: Utensils },
     { id: "photos" as const, label: "Photos", icon: Camera },
   ];
+
+  const { data: photos, isLoading: photosLoading } = useProgressPhotos();
+  const uploadPhotoMutation = useUploadProgressPhoto();
+  const deletePhotoMutation = useDeleteProgressPhoto();
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [uploadNote, setUploadNote] = useState("");
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setIsUploadDialogOpen(true);
+      // Reset input value so same file can be selected again if needed
+      e.target.value = "";
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    try {
+      await uploadPhotoMutation.mutateAsync({
+        file: selectedFile,
+        date: new Date(),
+        notes: uploadNote
+      });
+      setIsUploadDialogOpen(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      setUploadNote("");
+    } catch (error) {
+      console.error("Failed to upload photo:", error);
+      // Ideally show toast error here
+    }
+  };
+
+  const handleCancelUpload = () => {
+    setIsUploadDialogOpen(false);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setUploadNote("");
+  };
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (confirm("Are you sure you want to delete this photo?")) {
+      try {
+        await deletePhotoMutation.mutateAsync(photoId);
+      } catch (error) {
+        console.error("Failed to delete photo:", error);
+      }
+    }
+  };
 
   const renderWeightTab = () => (
     <motion.div
@@ -292,6 +349,69 @@ const Progress = memo(() => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-4"
     >
+      {/* Upload Dialog / Overlay */}
+      <AnimatePresence>
+        {isUploadDialogOpen && previewUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-sm overflow-hidden rounded-3xl bg-card p-6 shadow-2xl"
+              style={{ maxHeight: '90vh', overflowY: 'auto' }}
+            >
+              <h3 className="mb-4 text-center text-xl font-bold text-foreground">Add Photo</h3>
+
+              <div className="mx-auto mb-6 aspect-[3/4] w-full max-w-[200px] overflow-hidden rounded-2xl bg-muted shadow-inner">
+                <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
+              </div>
+
+              <div className="mb-6">
+                <label className="mb-2 block text-sm font-medium text-foreground">
+                  Notes
+                </label>
+                <textarea
+                  value={uploadNote}
+                  onChange={(e) => setUploadNote(e.target.value)}
+                  placeholder="How are you feeling?"
+                  className="w-full resize-none rounded-xl border border-input bg-background/50 p-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelUpload}
+                  disabled={uploadPhotoMutation.isPending}
+                  className="flex-1 rounded-xl bg-muted py-3.5 font-medium text-foreground transition-colors hover:bg-muted/80 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpload}
+                  disabled={uploadPhotoMutation.isPending}
+                  className="flex-1 rounded-xl bg-primary py-3.5 font-medium text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 hover:shadow-primary/40 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {uploadPhotoMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Upload"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <GlassCard className="p-4">
         <h3 className="mb-4 font-semibold text-foreground">
           Progress Photos
@@ -308,39 +428,78 @@ const Progress = memo(() => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className="relative aspect-[3/4] overflow-hidden rounded-xl"
+                className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-muted"
               >
                 <img
                   src={photo.photo_url}
                   alt={photo.date}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                  <span className="text-sm font-medium text-white">
-                    {new Date(photo.date).toLocaleDateString()}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+
+                {/* Delete Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePhoto(photo.id);
+                  }}
+                  className="absolute top-2 right-2 rounded-full bg-black/50 p-1.5 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-red-500 group-hover:opacity-100"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+                </button>
+
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <span className="text-sm font-medium text-white drop-shadow-md">
+                    {new Date(photo.date).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
                   </span>
+                  {photo.notes && (
+                    <p className="mt-1 line-clamp-2 text-xs text-white/80">
+                      {photo.notes}
+                    </p>
+                  )}
                 </div>
               </motion.div>
             ))}
           </div>
         ) : (
-          <p className="text-center text-muted-foreground py-8">No photos uploaded yet</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-4 rounded-full bg-muted p-4">
+              <Camera className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="font-medium text-foreground">No photos yet</p>
+            <p className="text-sm text-muted-foreground">
+              Take a photo to document your progress!
+            </p>
+          </div>
         )}
       </GlassCard>
 
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-6 text-muted-foreground transition-colors hover:border-fitness-orange hover:text-fitness-orange"
-      >
-        <Camera className="h-5 w-5" />
-        <span className="font-medium">Add Progress Photo</span>
-      </motion.button>
+      <div className="relative">
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          id="photo-upload"
+          onChange={handleFileSelect}
+        />
+        <label
+          htmlFor="photo-upload"
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-6 text-muted-foreground transition-all hover:border-fitness-orange hover:text-fitness-orange hover:bg-fitness-orange/5 active:scale-[0.99]"
+        >
+          <Camera className="h-5 w-5" />
+          <span className="font-medium">Add Progress Photo</span>
+        </label>
+      </div>
     </motion.div>
   );
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-background p-4">
+      <div className="min-h-screen bg-background p-4 pb-24">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -350,6 +509,8 @@ const Progress = memo(() => {
           <h1 className="text-2xl font-bold text-foreground">Progress</h1>
           <p className="text-muted-foreground">Track your fitness journey</p>
         </motion.div>
+
+        {/* ... (Existing Tabs and other renders) ... */}
 
         {/* Tabs */}
         <div className="mb-6 flex gap-2 overflow-x-auto scrollbar-hide">

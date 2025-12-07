@@ -394,6 +394,7 @@ CREATE POLICY "Members read own workout logs" ON workout_logs
   );
 
 -- Members read own progress photos
+DROP POLICY IF EXISTS "Members read own photos" ON progress_photos;
 CREATE POLICY "Members read own photos" ON progress_photos
   FOR SELECT USING (
     member_id IN (SELECT id FROM members WHERE auth_id = auth.uid())
@@ -453,6 +454,36 @@ CREATE INDEX IF NOT EXISTS idx_diet_assignments_member ON diet_assignments(membe
 CREATE INDEX IF NOT EXISTS idx_member_attendance_member_date ON member_attendance(member_id, date);
 CREATE INDEX IF NOT EXISTS idx_workout_logs_member ON workout_logs(member_id);
 CREATE INDEX IF NOT EXISTS idx_member_measurements_member ON member_measurements(member_id);
+
+-- MEMBER NOTIFICATIONS
+CREATE TABLE IF NOT EXISTS member_notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  member_id UUID REFERENCES members(id) ON DELETE CASCADE,
+  type TEXT NOT NULL, -- 'workout', 'diet', 'membership', 'achievement', 'announcement'
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  icon TEXT DEFAULT '🔔',
+  action_url TEXT, -- Optional deep link (e.g., '/workout', '/diet')
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE member_notifications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Members read own notifications" ON member_notifications;
+CREATE POLICY "Members read own notifications" ON member_notifications
+  FOR SELECT USING (
+    member_id IN (SELECT id FROM members WHERE auth_id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Members update own notifications" ON member_notifications;
+CREATE POLICY "Members update own notifications" ON member_notifications
+  FOR UPDATE USING (
+    member_id IN (SELECT id FROM members WHERE auth_id = auth.uid())
+  );
+
+CREATE INDEX IF NOT EXISTS idx_member_notifications_member ON member_notifications(member_id);
+CREATE INDEX IF NOT EXISTS idx_member_notifications_unread ON member_notifications(member_id, is_read) WHERE is_read = false;
 
 -- =====================================================
 -- MIGRATION COMPLETE!
