@@ -1,4 +1,4 @@
-import { memo, useEffect } from "react";
+import { memo } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,12 +6,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Loader2 } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
 import Workout from "./pages/Workout";
 import Diet from "./pages/Diet";
 import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
+import ThemeSettings from "./pages/ThemeSettings";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -68,6 +70,7 @@ const AppRoutes = memo(() => {
       <Route path="/diet" element={<ProtectedRoute><Diet /></ProtectedRoute>} />
       <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/theme-settings" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -78,16 +81,13 @@ AppRoutes.displayName = "AppRoutes";
 const AppContent = memo(() => {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
-
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-  }, []);
+  const isThemeSettings = location.pathname === '/theme-settings';
 
   return (
-    <div className="app-container min-h-screen bg-background pb-24">
+    <div className="app-container min-h-screen bg-background transition-colors duration-300 pb-24">
       <AppRoutes />
-      {/* Show bottom nav on all pages except login */}
-      {!isLoginPage && <BottomNav />}
+      {/* Show bottom nav on all pages except login and theme settings */}
+      {!isLoginPage && !isThemeSettings && <BottomNav />}
     </div>
   );
 });
@@ -96,15 +96,17 @@ AppContent.displayName = "AppContent";
 
 const App = memo(() => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider delayDuration={0}>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <TooltipProvider delayDuration={0}>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 ));
 

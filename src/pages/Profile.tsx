@@ -6,17 +6,15 @@ import {
   Phone,
   Mail,
   QrCode,
-  Moon,
-  Sun,
   Bell,
   Ruler,
-  Weight,
   Activity,
   ChevronRight,
   LogOut,
   Crown,
   Calendar,
   Loader2,
+  Palette,
 } from "lucide-react";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -24,6 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMember, useMembershipStatus } from "@/hooks/useMember";
 import { useGymTheme } from "@/hooks/useGymBranding";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const Profile = memo(() => {
   const navigate = useNavigate();
@@ -31,18 +30,13 @@ const Profile = memo(() => {
   const { data: memberData, isLoading } = useMember();
   const { daysLeft } = useMembershipStatus();
   const { gymName, contactNumber } = useGymTheme();
+  const { accentColor } = useTheme();
 
-  const [darkMode, setDarkMode] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [metricUnits, setMetricUnits] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const displayMember = memberData || member;
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle("dark");
-  };
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -222,23 +216,31 @@ const Profile = memo(() => {
             Settings
           </h2>
           <GlassCard className="divide-y divide-border">
-            {/* Dark Mode */}
-            <div className="flex items-center justify-between p-4">
+            {/* Theme & Appearance */}
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate("/theme-settings")}
+              className="flex w-full items-center justify-between p-4"
+            >
               <div className="flex items-center gap-3">
-                {darkMode ? (
-                  <Moon className="h-5 w-5 text-fitness-purple" />
-                ) : (
-                  <Sun className="h-5 w-5 text-fitness-yellow" />
-                )}
-                <span className="font-medium text-foreground">Dark Mode</span>
+                <div 
+                  className="flex h-8 w-8 items-center justify-center rounded-lg"
+                  style={{ backgroundColor: `hsl(${accentColor.hue}, ${accentColor.saturation}%, ${accentColor.lightness}%)` }}
+                >
+                  <Palette className="h-4 w-4 text-white" />
+                </div>
+                <div className="text-left">
+                  <span className="font-medium text-foreground block">Theme & Appearance</span>
+                  <span className="text-xs text-muted-foreground">{accentColor.name} theme</span>
+                </div>
               </div>
-              <Switch checked={darkMode} onCheckedChange={toggleDarkMode} />
-            </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </motion.button>
 
             {/* Notifications */}
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
-                <Bell className="h-5 w-5 text-fitness-orange" />
+                <Bell className="h-5 w-5 text-primary" />
                 <span className="font-medium text-foreground">
                   Notifications
                 </span>
