@@ -9,10 +9,13 @@ import {
   Check,
   Palette,
   Sparkles,
+  Cloud,
+  CloudOff,
 } from "lucide-react";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { useTheme, ACCENT_COLORS, ThemeMode, AccentColor } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ThemePreview = memo(({ 
   mode, 
@@ -152,6 +155,8 @@ ColorSwatch.displayName = "ColorSwatch";
 const ThemeSettings = memo(() => {
   const navigate = useNavigate();
   const { themeMode, setThemeMode, accentColor, setAccentColor, isTransitioning } = useTheme();
+  const { member } = useAuth();
+  const isSyncedToCloud = !!member?.id;
 
   return (
     <PageTransition>
@@ -282,15 +287,29 @@ const ThemeSettings = memo(() => {
             </GlassCard>
           </motion.div>
 
-          {/* Info */}
-          <motion.p
+          {/* Sync Status */}
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="text-center text-sm text-muted-foreground"
+            className="flex items-center justify-center gap-2"
           >
-            Theme changes are saved automatically and apply instantly across the app.
-          </motion.p>
+            {isSyncedToCloud ? (
+              <>
+                <Cloud className="h-4 w-4 text-primary" />
+                <span className="text-sm text-muted-foreground">
+                  Synced to cloud - your preferences will sync across all devices
+                </span>
+              </>
+            ) : (
+              <>
+                <CloudOff className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  Saved locally - log in to sync across devices
+                </span>
+              </>
+            )}
+          </motion.div>
         </div>
       </div>
     </PageTransition>

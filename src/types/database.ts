@@ -209,6 +209,20 @@ export interface MemberMilestone {
     created_at: string;
 }
 
+export interface MemberPreferences {
+    id: string;
+    member_id: string;
+    theme_mode: 'light' | 'dark' | 'system';
+    accent_color_name: string;
+    accent_color_hue: number;
+    accent_color_saturation: number;
+    accent_color_lightness: number;
+    notifications_enabled: boolean;
+    metric_units: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
 // Extended types with relations
 export interface WorkoutWithExercises extends Workout {
     exercises: WorkoutExercise[];
@@ -329,6 +343,12 @@ export interface Database {
                 Row: MemberMilestone;
                 Insert: Partial<MemberMilestone>;
                 Update: Partial<MemberMilestone>;
+                Relationships: [];
+            };
+            member_preferences: {
+                Row: MemberPreferences;
+                Insert: Partial<MemberPreferences>;
+                Update: Partial<MemberPreferences>;
                 Relationships: [];
             };
         };

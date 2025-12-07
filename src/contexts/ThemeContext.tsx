@@ -27,6 +27,7 @@ interface ThemeContextType {
   setAccentColor: (color: AccentColor) => void;
   effectiveTheme: "light" | "dark";
   isTransitioning: boolean;
+  isSyncedToCloud: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -40,6 +41,15 @@ function getSystemTheme(): "light" | "dark" {
   }
   return "dark";
 }
+
+// Internal context for sharing state setters with the sync hook
+interface ThemeInternalContextType {
+  setThemeModeState: (mode: ThemeMode) => void;
+  setAccentColorState: (color: AccentColor) => void;
+  applyTheme: (theme: "light" | "dark", accent: AccentColor) => void;
+}
+
+export const ThemeInternalContext = createContext<ThemeInternalContextType | undefined>(undefined);
 
 export const ThemeProvider = memo(({ children }: { children: ReactNode }) => {
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
@@ -67,6 +77,7 @@ export const ThemeProvider = memo(({ children }: { children: ReactNode }) => {
   });
 
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isSyncedToCloud, setIsSyncedToCloud] = useState(false);
 
   const effectiveTheme = themeMode === "system" ? getSystemTheme() : themeMode;
 
@@ -142,9 +153,18 @@ export const ThemeProvider = memo(({ children }: { children: ReactNode }) => {
         setAccentColor,
         effectiveTheme,
         isTransitioning,
+        isSyncedToCloud,
       }}
     >
-      {children}
+      <ThemeInternalContext.Provider
+        value={{
+          setThemeModeState,
+          setAccentColorState,
+          applyTheme,
+        }}
+      >
+        {children}
+      </ThemeInternalContext.Provider>
     </ThemeContext.Provider>
   );
 });
@@ -155,6 +175,14 @@ export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
     throw new Error("useTheme must be used within a ThemeProvider");
+  }
+  return context;
+}
+
+export function useThemeInternal() {
+  const context = useContext(ThemeInternalContext);
+  if (!context) {
+    throw new Error("useThemeInternal must be used within a ThemeProvider");
   }
   return context;
 }

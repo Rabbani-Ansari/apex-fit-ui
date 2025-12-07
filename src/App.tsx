@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { BottomNav } from "@/components/layout/BottomNav";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeSyncProvider } from "@/components/ThemeSyncProvider";
 import { Loader2 } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
 import Workout from "./pages/Workout";
@@ -98,13 +99,15 @@ const App = memo(() => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
-        <TooltipProvider delayDuration={0}>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
+        <ThemeSyncProvider>
+          <TooltipProvider delayDuration={0}>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeSyncProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
