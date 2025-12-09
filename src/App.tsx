@@ -15,6 +15,7 @@ import Diet from "./pages/Diet";
 import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
 import ThemeSettings from "./pages/ThemeSettings";
+import Shop from "./pages/Shop";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -72,6 +73,7 @@ const AppRoutes = memo(() => {
       <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/theme-settings" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
+      <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -83,12 +85,13 @@ const AppContent = memo(() => {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
   const isThemeSettings = location.pathname === '/theme-settings';
+  const isShopPage = location.pathname === '/shop';
 
   return (
     <div className="app-container min-h-screen bg-background transition-colors duration-300 pb-24">
       <AppRoutes />
-      {/* Show bottom nav on all pages except login and theme settings */}
-      {!isLoginPage && !isThemeSettings && <BottomNav />}
+      {/* Show bottom nav on all pages except login, theme settings, and shop */}
+      {!isLoginPage && !isThemeSettings && !isShopPage && <BottomNav />}
     </div>
   );
 });

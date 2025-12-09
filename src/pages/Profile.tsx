@@ -15,6 +15,7 @@ import {
   Calendar,
   Loader2,
   Palette,
+  ShoppingBag,
 } from "lucide-react";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -232,6 +233,27 @@ const Profile = memo(() => {
                 <div className="text-left">
                   <span className="font-medium text-foreground block">Theme & Appearance</span>
                   <span className="text-xs text-muted-foreground">{accentColor.name} theme</span>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </motion.button>
+
+            {/* Shop & Supplements */}
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate("/shop")}
+              className="flex w-full items-center justify-between p-4"
+            >
+              <div className="flex items-center gap-3">
+                <div 
+                  className="flex h-8 w-8 items-center justify-center rounded-lg"
+                  style={{ backgroundColor: `hsl(${accentColor.hue}, ${accentColor.saturation}%, ${accentColor.lightness}%)` }}
+                >
+                  <ShoppingBag className="h-4 w-4 text-white" />
+                </div>
+                <div className="text-left">
+                  <span className="font-medium text-foreground block">Shop & Supplements</span>
+                  <span className="text-xs text-muted-foreground">Buy gym products</span>
                 </div>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
