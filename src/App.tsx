@@ -8,6 +8,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ThemeSyncProvider } from "@/components/ThemeSyncProvider";
+import { CartProvider } from "@/contexts/CartContext";
 import { Loader2 } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
 import Workout from "./pages/Workout";
@@ -16,6 +17,10 @@ import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
 import ThemeSettings from "./pages/ThemeSettings";
 import Shop from "./pages/Shop";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import AddAddress from "./pages/AddAddress";
+import OrderSuccess from "./pages/OrderSuccess";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -74,6 +79,10 @@ const AppRoutes = memo(() => {
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/theme-settings" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
       <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
+      <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+      <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+      <Route path="/address/add" element={<ProtectedRoute><AddAddress /></ProtectedRoute>} />
+      <Route path="/order-success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -85,13 +94,13 @@ const AppContent = memo(() => {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
   const isThemeSettings = location.pathname === '/theme-settings';
-  const isShopPage = location.pathname === '/shop';
+  const hideBottomNav = ['/shop', '/cart', '/checkout', '/address/add', '/order-success'].includes(location.pathname);
 
   return (
     <div className="app-container min-h-screen bg-background transition-colors duration-300 pb-24">
       <AppRoutes />
-      {/* Show bottom nav on all pages except login, theme settings, and shop */}
-      {!isLoginPage && !isThemeSettings && !isShopPage && <BottomNav />}
+      {/* Show bottom nav on all pages except login, theme settings, and shop flow pages */}
+      {!isLoginPage && !isThemeSettings && !hideBottomNav && <BottomNav />}
     </div>
   );
 });
@@ -103,13 +112,15 @@ const App = memo(() => (
     <ThemeProvider>
       <AuthProvider>
         <ThemeSyncProvider>
-          <TooltipProvider delayDuration={0}>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
-          </TooltipProvider>
+          <CartProvider>
+            <TooltipProvider delayDuration={0}>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </TooltipProvider>
+          </CartProvider>
         </ThemeSyncProvider>
       </AuthProvider>
     </ThemeProvider>

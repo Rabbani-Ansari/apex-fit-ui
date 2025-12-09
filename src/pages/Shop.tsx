@@ -7,20 +7,25 @@ import {
   Star,
   ShoppingCart,
   Plus,
+  Check,
 } from "lucide-react";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useCart } from "@/contexts/CartContext";
 import { products, categories, type Product } from "@/data/shopData";
 
 const Shop = memo(() => {
   const navigate = useNavigate();
   const { accentColor } = useTheme();
+  const { addToCart, getCartCount, items } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [cartCount, setCartCount] = useState(0);
+  const [addedProductId, setAddedProductId] = useState<string | null>(null);
+
+  const cartCount = getCartCount();
 
   const accentStyle = {
     backgroundColor: `hsl(${accentColor.hue}, ${accentColor.saturation}%, ${accentColor.lightness}%)`,
@@ -41,7 +46,14 @@ const Shop = memo(() => {
   }, [searchQuery, selectedCategory]);
 
   const handleAddToCart = (product: Product) => {
-    setCartCount((prev) => prev + 1);
+    addToCart(product);
+    setAddedProductId(product.id);
+    setTimeout(() => setAddedProductId(null), 800);
+  };
+
+  const getProductQuantity = (productId: string) => {
+    const item = items.find((i) => i.product.id === productId);
+    return item?.quantity || 0;
   };
 
   const containerVariants = {
@@ -98,22 +110,24 @@ const Shop = memo(() => {
                 Buy supplements, accessories, merch & nutrition from your gym.
               </p>
             </div>
-            <motion.div
+            <motion.button
               whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/cart")}
               className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-muted"
             >
               <ShoppingCart className="h-5 w-5 text-foreground" />
               {cartCount > 0 && (
                 <motion.div
+                  key={cartCount}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-white"
                   style={accentStyle}
                 >
-                  {cartCount}
+                  {cartCount > 99 ? "99+" : cartCount}
                 </motion.div>
               )}
-            </motion.div>
+            </motion.button>
           </div>
 
           {/* Search Bar */}
@@ -234,10 +248,24 @@ const Shop = memo(() => {
                             whileTap={{ scale: 0.85 }}
                             whileHover={{ scale: 1.05 }}
                             onClick={() => handleAddToCart(product)}
-                            className="flex h-8 w-8 items-center justify-center rounded-xl text-white transition-shadow hover:shadow-lg"
+                            className="flex h-8 w-8 items-center justify-center rounded-xl text-white transition-shadow hover:shadow-lg relative overflow-hidden"
                             style={accentStyle}
                           >
-                            <Plus className="h-4 w-4" />
+                            {addedProductId === product.id ? (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                              >
+                                <Check className="h-4 w-4" />
+                              </motion.div>
+                            ) : (
+                              <Plus className="h-4 w-4" />
+                            )}
+                            {getProductQuantity(product.id) > 0 && addedProductId !== product.id && (
+                              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background text-[10px] font-bold">
+                                {getProductQuantity(product.id)}
+                              </span>
+                            )}
                           </motion.button>
                         </div>
                       </div>
