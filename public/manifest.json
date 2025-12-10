@@ -3,10 +3,16 @@
   "short_name": "GymMatrix",
   "description": "Premium Gym Member App - Track workouts, diet, and progress",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0a0f",
   "theme_color": "#f97316",
   "orientation": "portrait",
+  "categories": [
+    "fitness",
+    "health",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "/favicon.ico",
@@ -15,8 +21,16 @@
     },
     {
       "src": "/gymmatrix-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/gymmatrix-logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }
