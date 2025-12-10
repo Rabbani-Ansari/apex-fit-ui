@@ -59,7 +59,7 @@ export const ThemeProvider = memo(({ children }: { children: ReactNode }) => {
         return stored;
       }
     }
-    return "dark";
+    return "light";
   });
 
   const [accentColor, setAccentColorState] = useState<AccentColor>(() => {
@@ -73,7 +73,7 @@ export const ThemeProvider = memo(({ children }: { children: ReactNode }) => {
         }
       }
     }
-    return ACCENT_COLORS[0]; // Orange default
+    return ACCENT_COLORS[2]; // Green default
   });
 
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -83,10 +83,10 @@ export const ThemeProvider = memo(({ children }: { children: ReactNode }) => {
 
   const applyTheme = useCallback((theme: "light" | "dark", accent: AccentColor) => {
     const root = document.documentElement;
-    
+
     // Add transition class for smooth theme change
     root.style.setProperty("--theme-transition", "background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease");
-    
+
     if (theme === "dark") {
       root.classList.add("dark");
     } else {
@@ -98,7 +98,7 @@ export const ThemeProvider = memo(({ children }: { children: ReactNode }) => {
     root.style.setProperty("--primary", `${accent.hue} ${accent.saturation}% ${lightVariant}%`);
     root.style.setProperty("--ring", `${accent.hue} ${accent.saturation}% ${lightVariant}%`);
     root.style.setProperty("--fitness-orange", `${accent.hue} ${accent.saturation}% ${lightVariant}%`);
-    
+
     // Update status bar color for mobile
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
@@ -110,10 +110,10 @@ export const ThemeProvider = memo(({ children }: { children: ReactNode }) => {
     setIsTransitioning(true);
     setThemeModeState(mode);
     localStorage.setItem(THEME_STORAGE_KEY, mode);
-    
+
     const newEffectiveTheme = mode === "system" ? getSystemTheme() : mode;
     applyTheme(newEffectiveTheme, accentColor);
-    
+
     setTimeout(() => setIsTransitioning(false), 300);
   }, [accentColor, applyTheme]);
 
@@ -122,7 +122,7 @@ export const ThemeProvider = memo(({ children }: { children: ReactNode }) => {
     setAccentColorState(color);
     localStorage.setItem(ACCENT_STORAGE_KEY, JSON.stringify(color));
     applyTheme(effectiveTheme, color);
-    
+
     setTimeout(() => setIsTransitioning(false), 300);
   }, [effectiveTheme, applyTheme]);
 

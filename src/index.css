@@ -102,6 +102,15 @@
 }
 
 @layer components {
+  /* Hide scrollbar for horizontal scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Native-like tap feedback */
   .nav-tap-target {
     min-height: 44px;

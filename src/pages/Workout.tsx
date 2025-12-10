@@ -20,12 +20,12 @@ import { RPESelector } from "@/components/workout/RPESelector";
 import { WeightAdjuster } from "@/components/workout/WeightAdjuster";
 import { EnhancedRestTimer } from "@/components/workout/EnhancedRestTimer";
 import { WorkoutNotesModal } from "@/components/workout/WorkoutNotesModal";
-import { SetCard } from "@/components/workout/SetCard";
 import { QuickStatsPanel } from "@/components/workout/QuickStatsPanel";
 import { CompletionScreen } from "@/components/workout/CompletionScreen";
 import { LastWorkoutComparison } from "@/components/workout/LastWorkoutComparison";
-import { ExerciseVideoToggle } from "@/components/workout/ExerciseVideoToggle";
 import { VoiceCoachingToggle } from "@/components/workout/VoiceCoachingToggle";
+import { ExerciseHero } from "@/components/workout/ExerciseHero";
+import { SetProgressDots } from "@/components/workout/SetProgressDots";
 import { useVoiceCoaching } from "@/hooks/useVoiceCoaching";
 import { useTodayWorkout } from "@/hooks/useWorkouts";
 
@@ -273,6 +273,53 @@ const Workout = memo(() => {
     return []; // Empty until we implement workout_logs comparison
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-fitness-orange mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading your workout...</p>
+          </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
+  // Show empty state if no workout assigned
+  if (!isWorkoutStarted && exercises.length === 0) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen bg-background p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <h1 className="text-2xl font-bold text-foreground">
+              {todayWorkout.name}
+            </h1>
+            <p className="text-muted-foreground">
+              No exercises available today
+            </p>
+          </motion.div>
+
+          <div className="mb-6 flex justify-center">
+            <LottieAnimation type="bench-press" size={150} />
+          </div>
+
+          <GlassCard className="p-6 text-center">
+            <h3 className="text-lg font-semibold text-foreground mb-2">No Workout Assigned</h3>
+            <p className="text-muted-foreground">
+              Contact your trainer to get a workout plan assigned to you.
+            </p>
+          </GlassCard>
+        </div>
+      </PageTransition>
+    );
+  }
+
   if (!isWorkoutStarted) {
     return (
       <PageTransition>
@@ -375,22 +422,55 @@ const Workout = memo(() => {
               size="lg"
               icon={<Play className="h-5 w-5" />}
               onClick={() => {
+                if (exercises.length === 0) {
+                  toast.error("No exercises available to start");
+                  return;
+                }
                 setIsWorkoutStarted(true);
                 voiceCoaching.announceWorkoutStart();
                 const firstExercise = exercises[0];
-                setTimeout(() => {
-                  voiceCoaching.announceExercise(
-                    firstExercise.name,
-                    firstExercise.sets,
-                    firstExercise.reps,
-                    firstExercise.weight
-                  );
-                }, 1500);
+                if (firstExercise) {
+                  setTimeout(() => {
+                    voiceCoaching.announceExercise(
+                      firstExercise.name,
+                      firstExercise.sets,
+                      firstExercise.reps,
+                      firstExercise.weight
+                    );
+                  }, 1500);
+                }
               }}
             >
               Start Workout
             </AnimatedButton>
           </div>
+        </div>
+      </PageTransition>
+    );
+  }
+
+  // Guard against empty exercises when workout is started - reset state via effect
+  // This should rarely happen but prevents crashes
+  if (exercises.length === 0 || !exercises[currentExercise]) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+          <GlassCard className="p-6 text-center">
+            <h3 className="text-lg font-semibold text-foreground mb-2">Workout Unavailable</h3>
+            <p className="text-muted-foreground mb-4">
+              The workout data is no longer available.
+            </p>
+            <AnimatedButton
+              variant="gradient"
+              onClick={() => {
+                setIsWorkoutStarted(false);
+                setCurrentExercise(0);
+                setCurrentSet(1);
+              }}
+            >
+              Go Back
+            </AnimatedButton>
+          </GlassCard>
         </div>
       </PageTransition>
     );
@@ -503,7 +583,7 @@ const Workout = memo(() => {
           )}
         </AnimatePresence>
 
-        {/* Current Exercise */}
+        {/* Current Exercise - Redesigned with Hero Animation */}
         {!isResting && !showRPESelector && (
           <motion.div
             key={activeExercise.id}
@@ -514,112 +594,95 @@ const Workout = memo(() => {
             initial={{ opacity: 0, x: swipeDirection * 50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -swipeDirection * 50 }}
+            className="space-y-4"
           >
-            <GlassCard className="mb-4 p-4">
-              {/* Navigation Arrows */}
-              <div className="flex items-center justify-between mb-2">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => navigateExercise(-1)}
-                  disabled={currentExercise === 0}
-                  className={`p-2 rounded-full ${currentExercise === 0
-                    ? "text-muted/50"
-                    : "text-muted-foreground hover:bg-muted/50"
-                    }`}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </motion.button>
-                <span className="text-xs text-muted-foreground">
-                  Swipe to navigate
-                </span>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => navigateExercise(1)}
-                  disabled={currentExercise === exercises.length - 1}
-                  className={`p-2 rounded-full ${currentExercise === exercises.length - 1
-                    ? "text-muted/50"
-                    : "text-muted-foreground hover:bg-muted/50"
-                    }`}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </motion.button>
-              </div>
-
-              {/* Last Workout Comparison */}
-              <LastWorkoutComparison
-                lastWorkout={lastWorkout}
-                currentWeight={activeExercise.weight}
-              />
-
-              {/* Exercise Video Toggle */}
-              <ExerciseVideoToggle
-                exerciseName={activeExercise.name}
-                animationType={activeExercise.animation}
-              />
-
-              <div className="mt-4 text-center">
-                <h2 className="text-2xl font-bold text-foreground">
-                  {activeExercise.name}
-                </h2>
-                <p className="mt-1 text-muted-foreground">
-                  {activeExercise.reps} reps
-                </p>
-              </div>
-
-              {/* Weight Quick Adjuster */}
-              {activeExercise.weight > 0 && (
-                <div className="mt-4">
-                  <WeightAdjuster
-                    weight={activeExercise.weight}
-                    onChange={handleWeightChange}
-                  />
-                </div>
-              )}
-
-              {/* Set-by-Set View */}
-              <div className="mt-6 space-y-2">
-                <p className="text-sm font-medium text-muted-foreground mb-2">
-                  Sets
-                </p>
-                {activeExercise.setData.map((set, index) => (
-                  <SetCard
-                    key={index}
-                    set={set}
-                    isActive={index === currentSet - 1 && !set.completed}
-                    onClick={() => handleSetClick(index)}
-                  />
-                ))}
-              </div>
-
-              <AnimatedButton
-                variant="gradient"
-                fullWidth
-                size="lg"
-                className="mt-6"
-                icon={<Check className="h-5 w-5" />}
-                onClick={handleSetComplete}
-                disabled={activeExercise.setData[currentSet - 1]?.completed}
+            {/* Navigation Arrows */}
+            <div className="flex items-center justify-between px-2">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => navigateExercise(-1)}
+                disabled={currentExercise === 0}
+                className={`p-2 rounded-full ${currentExercise === 0
+                  ? "text-muted/50"
+                  : "text-muted-foreground hover:bg-muted/50"
+                  }`}
               >
-                Complete Set {currentSet}
-              </AnimatedButton>
-            </GlassCard>
+                <ChevronLeft className="h-5 w-5" />
+              </motion.button>
+              <span className="text-xs text-muted-foreground">
+                Exercise {currentExercise + 1} of {exercises.length}
+              </span>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => navigateExercise(1)}
+                disabled={currentExercise === exercises.length - 1}
+                className={`p-2 rounded-full ${currentExercise === exercises.length - 1
+                  ? "text-muted/50"
+                  : "text-muted-foreground hover:bg-muted/50"
+                  }`}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </motion.button>
+            </div>
+
+            {/* Hero Animation with Exercise Info */}
+            <ExerciseHero
+              exerciseName={activeExercise.name}
+              animationType={activeExercise.animation}
+              animationUrl={activeExercise.animationUrl}
+              reps={activeExercise.reps}
+              weight={activeExercise.weight}
+            />
+
+            {/* Set Progress Dots */}
+            <div className="py-4">
+              <SetProgressDots
+                totalSets={activeExercise.sets}
+                completedSets={activeExercise.setData.filter(s => s.completed).length}
+                currentSet={currentSet}
+              />
+            </div>
+
+            {/* Weight Adjuster - Compact */}
+            {activeExercise.weight > 0 && (
+              <GlassCard className="p-3">
+                <WeightAdjuster
+                  weight={activeExercise.weight}
+                  onChange={handleWeightChange}
+                />
+              </GlassCard>
+            )}
+
+            {/* Last Workout Comparison (if available) */}
+            <LastWorkoutComparison
+              lastWorkout={lastWorkout}
+              currentWeight={activeExercise.weight}
+            />
+
+            {/* Complete Set Button */}
+            <AnimatedButton
+              variant="gradient"
+              fullWidth
+              size="lg"
+              className="mt-2"
+              icon={<Check className="h-5 w-5" />}
+              onClick={handleSetComplete}
+              disabled={activeExercise.setData[currentSet - 1]?.completed}
+            >
+              Complete Set {currentSet}
+            </AnimatedButton>
           </motion.div>
         )}
 
-        {/* Exercise List (collapsed) */}
-        <div className="space-y-2">
+        {/* Exercise List - Vertical Mobile-Friendly */}
+        <div className="mt-6 space-y-2">
+          <p className="text-sm font-medium text-muted-foreground mb-3">All Exercises</p>
           {exercises.map((exercise, index) => (
-            <motion.div
+            <motion.button
               key={exercise.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className={`flex items-center gap-3 rounded-xl p-3 ${exercise.completed
-                ? "bg-fitness-success/10"
-                : index === currentExercise
-                  ? "bg-fitness-orange/10 ring-1 ring-fitness-orange"
-                  : "bg-muted/30"
-                }`}
               onClick={() => {
                 if (!exercise.completed && index !== currentExercise) {
                   setCurrentExercise(index);
@@ -627,35 +690,56 @@ const Workout = memo(() => {
                   setIsResting(false);
                 }
               }}
-            >
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full ${exercise.completed
-                  ? "bg-fitness-success text-white"
+              className={`w-full flex items-center gap-3 rounded-xl p-3 transition-all ${exercise.completed
+                  ? "bg-primary/10"
                   : index === currentExercise
-                    ? "bg-fitness-orange text-white"
-                    : "bg-muted text-muted-foreground"
+                    ? "bg-primary/20 ring-2 ring-primary"
+                    : "bg-muted/30 hover:bg-muted/50"
+                }`}
+            >
+              {/* Exercise Number / Check */}
+              <div
+                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-bold ${exercise.completed
+                    ? "bg-primary text-primary-foreground"
+                    : index === currentExercise
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
                   }`}
               >
                 {exercise.completed ? (
-                  <Check className="h-4 w-4" />
+                  <Check className="h-5 w-5" />
                 ) : (
-                  <span className="text-xs font-bold">{index + 1}</span>
+                  <span>{index + 1}</span>
                 )}
               </div>
-              <div className="flex-1">
+
+              {/* Exercise Info */}
+              <div className="flex-1 text-left">
                 <p
                   className={`font-medium ${exercise.completed
-                    ? "text-fitness-success"
-                    : "text-foreground"
+                      ? "text-primary"
+                      : index === currentExercise
+                        ? "text-foreground"
+                        : "text-foreground"
                     }`}
                 >
                   {exercise.name}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {exercise.setData.filter((s) => s.completed).length}/{exercise.sets} sets
+                  {exercise.weight > 0 && ` • ${exercise.weight} kg`}
                 </p>
               </div>
-            </motion.div>
+
+              {/* Status indicator */}
+              {index === currentExercise && !exercise.completed && (
+                <div className="flex-shrink-0">
+                  <span className="text-xs font-medium text-primary bg-primary/20 px-2 py-1 rounded-full">
+                    Active
+                  </span>
+                </div>
+              )}
+            </motion.button>
           ))}
         </div>
 

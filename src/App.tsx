@@ -25,6 +25,7 @@ import Login from "./pages/Login";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
+import Debug from "./pages/Debug";
 
 // Configure QueryClient with aggressive caching
 const queryClient = new QueryClient({
@@ -87,6 +88,7 @@ const AppRoutes = memo(() => {
       <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
       <Route path="/address/add" element={<ProtectedRoute><AddAddress /></ProtectedRoute>} />
       <Route path="/order-success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
+      <Route path="/debug" element={<ProtectedRoute><Debug /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
