@@ -75,7 +75,8 @@ export default function DebugPage() {
         console.log('👥 All members (RLS restricts to own profile):', allMembers);
 
         // Check if auth_id matches for current member
-        const currentMemberFromDb = allMembers?.find(m => m.email === user?.email);
+        const membersArray = allMembers as Array<{ id: string; name: string; email: string; auth_id: string | null }> | null;
+        const currentMemberFromDb = membersArray?.find(m => m.email === user?.email);
         const memberAuthIdMatch = currentMemberFromDb?.auth_id === authUserId;
         console.log('🔗 Member auth_id match:', {
             memberEmail: user?.email,
@@ -142,6 +143,7 @@ export default function DebugPage() {
 
         try {
             // Call the link_auth_to_member RPC function
+            // @ts-ignore - RPC function types not generated
             const { data: linkResult, error: linkError } = await supabase.rpc('link_auth_to_member', {
                 p_email: user.email,
                 p_auth_id: user.id
@@ -149,8 +151,8 @@ export default function DebugPage() {
 
             if (linkError) {
                 // Try direct update as fallback
-                const { error: updateError } = await supabase
-                    .from('members')
+                const { error: updateError } = await (supabase
+                    .from('members') as any)
                     .update({ auth_id: user.id })
                     .eq('email', user.email);
 
