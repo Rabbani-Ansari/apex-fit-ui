@@ -22,6 +22,8 @@ import Checkout from "./pages/Checkout";
 import AddAddress from "./pages/AddAddress";
 import OrderSuccess from "./pages/OrderSuccess";
 import Login from "./pages/Login";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
 // Configure QueryClient with aggressive caching
@@ -72,6 +74,8 @@ const AppRoutes = memo(() => {
   return (
     <Routes location={location} key={location.pathname}>
       <Route path="/login" element={<Login />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<Terms />} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/workout" element={<ProtectedRoute><Workout /></ProtectedRoute>} />
       <Route path="/diet" element={<ProtectedRoute><Diet /></ProtectedRoute>} />
@@ -94,13 +98,14 @@ const AppContent = memo(() => {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
   const isThemeSettings = location.pathname === '/theme-settings';
+  const isLegalPage = ['/privacy-policy', '/terms'].includes(location.pathname);
   const hideBottomNav = ['/shop', '/cart', '/checkout', '/address/add', '/order-success'].includes(location.pathname);
 
   return (
     <div className="app-container min-h-screen bg-background transition-colors duration-300 pb-24">
       <AppRoutes />
       {/* Show bottom nav on all pages except login, theme settings, and shop flow pages */}
-      {!isLoginPage && !isThemeSettings && !hideBottomNav && <BottomNav />}
+      {!isLoginPage && !isThemeSettings && !isLegalPage && !hideBottomNav && <BottomNav />}
     </div>
   );
 });

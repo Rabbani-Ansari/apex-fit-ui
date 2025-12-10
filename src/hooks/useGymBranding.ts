@@ -50,8 +50,8 @@ export function useGymTheme() {
 
     return {
         isLoading,
-        gymName: branding?.gym_name || 'FitnessPro',
-        logoUrl: branding?.logo_url || null,
+        gymName: branding?.gym_name || 'GymMatrix',
+        logoUrl: branding?.logo_url || '/gymmatrix-logo.png',
         primaryColor: branding?.primary_color || '#f97316',
         secondaryColor: branding?.secondary_color || '#1e40af',
         address: branding?.address || null,

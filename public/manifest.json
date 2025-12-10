@@ -1,6 +1,6 @@
 {
-  "name": "FitnessPro",
-  "short_name": "FitnessPro",
+  "name": "GymMatrix",
+  "short_name": "GymMatrix",
   "description": "Premium Gym Member App - Track workouts, diet, and progress",
   "start_url": "/",
   "display": "standalone",
@@ -12,6 +12,11 @@
       "src": "/favicon.ico",
       "sizes": "64x64",
       "type": "image/x-icon"
+    },
+    {
+      "src": "/gymmatrix-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }

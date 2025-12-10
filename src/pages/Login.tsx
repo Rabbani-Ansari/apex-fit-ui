@@ -1,6 +1,6 @@
 import { useState, memo } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Dumbbell, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -215,14 +215,31 @@ const Login = memo(() => {
             </motion.div>
 
             {/* Footer */}
-            <motion.p
+            <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="mt-8 text-xs text-muted-foreground z-10"
+                className="mt-8 text-center z-10"
             >
-                Powered by FitnessPro
-            </motion.p>
+                <p className="text-xs text-muted-foreground">
+                    Powered by GymMatrix
+                </p>
+                <div className="flex items-center justify-center gap-3 mt-3">
+                    <Link
+                        to="/privacy-policy"
+                        className="text-xs text-muted-foreground hover:text-fitness-orange hover:underline transition-colors"
+                    >
+                        Privacy Policy
+                    </Link>
+                    <span className="text-xs text-muted-foreground">•</span>
+                    <Link
+                        to="/terms"
+                        className="text-xs text-muted-foreground hover:text-fitness-orange hover:underline transition-colors"
+                    >
+                        Terms & Conditions
+                    </Link>
+                </div>
+            </motion.div>
         </div>
     );
 });

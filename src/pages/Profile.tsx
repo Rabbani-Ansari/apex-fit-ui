@@ -224,7 +224,7 @@ const Profile = memo(() => {
               className="flex w-full items-center justify-between p-4"
             >
               <div className="flex items-center gap-3">
-                <div 
+                <div
                   className="flex h-8 w-8 items-center justify-center rounded-lg"
                   style={{ backgroundColor: `hsl(${accentColor.hue}, ${accentColor.saturation}%, ${accentColor.lightness}%)` }}
                 >
@@ -245,7 +245,7 @@ const Profile = memo(() => {
               className="flex w-full items-center justify-between p-4"
             >
               <div className="flex items-center gap-3">
-                <div 
+                <div
                   className="flex h-8 w-8 items-center justify-center rounded-lg"
                   style={{ backgroundColor: `hsl(${accentColor.hue}, ${accentColor.saturation}%, ${accentColor.lightness}%)` }}
                 >
@@ -306,7 +306,7 @@ const Profile = memo(() => {
 
         {/* App Version */}
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          FitnessPro v2.0.0 • Made with ❤️
+          GymMatrix v2.0.0 • Made with ❤️
         </p>
       </div>
     </PageTransition>
