@@ -10,8 +10,11 @@ export function useAttendance(startDate?: Date, endDate?: Date) {
     const start = startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const end = endDate || new Date();
 
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+
     return useQuery({
-        queryKey: ['attendance', member?.id, start.toISOString(), end.toISOString()],
+        queryKey: ['attendance', member?.id, startStr, endStr],
         queryFn: async (): Promise<MemberAttendance[]> => {
             if (!member?.id) return [];
 
@@ -19,8 +22,8 @@ export function useAttendance(startDate?: Date, endDate?: Date) {
                 .from('member_attendance')
                 .select('*')
                 .eq('member_id', member.id)
-                .gte('date', start.toISOString().split('T')[0])
-                .lte('date', end.toISOString().split('T')[0])
+                .gte('date', startStr)
+                .lte('date', endStr)
                 .order('date', { ascending: false });
 
             if (error) {
