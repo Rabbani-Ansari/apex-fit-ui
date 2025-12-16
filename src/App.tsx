@@ -135,7 +135,5 @@ const App = memo(() => (
     </ThemeProvider>
   </QueryClientProvider>
 ));
-
 App.displayName = "App";
-
 export default App;
