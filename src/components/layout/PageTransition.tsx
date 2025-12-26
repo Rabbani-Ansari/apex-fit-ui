@@ -1,23 +1,20 @@
-import { memo, ReactNode } from "react";
+import { motion } from "framer-motion";
+import { ReactNode } from "react";
 
 interface PageTransitionProps {
   children: ReactNode;
 }
 
-// Simplified wrapper - no animation delays for instant tab switching
-export const PageTransition = memo(({ children }: PageTransitionProps) => {
+export const PageTransition = ({ children }: PageTransitionProps) => {
   return (
-    <div className="min-h-screen pb-28">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="w-full h-full"
+    >
       {children}
-    </div>
+    </motion.div>
   );
-});
-
-PageTransition.displayName = "PageTransition";
-
-// Keep for backwards compatibility
-export const AnimatedLayout = memo(({ children }: PageTransitionProps) => {
-  return <>{children}</>;
-});
-
-AnimatedLayout.displayName = "AnimatedLayout";
+};

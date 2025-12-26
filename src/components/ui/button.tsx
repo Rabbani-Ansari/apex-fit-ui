@@ -1,4 +1,5 @@
 import * as React from "react";
+import { motion } from "framer-motion";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 
@@ -17,10 +18,10 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 px-4 py-2",
+        default: "h-11 px-6 py-2", // Increased to 44px native standard
         sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        lg: "h-12 rounded-md px-8",
+        icon: "h-11 w-11", // Increased to 44px
       },
     },
     defaultVariants: {
@@ -32,14 +33,24 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
-    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Comp = asChild ? Slot : (motion.button as any);
+
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        whileTap={{ scale: 0.97 }}
+        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        {...props}
+      />
+    );
   },
 );
 Button.displayName = "Button";

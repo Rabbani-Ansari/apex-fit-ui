@@ -26,79 +26,79 @@ export const GreetingHeader = ({ name, avatar, streak }: GreetingHeaderProps) =>
 
   return (
     <>
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-start justify-between px-4 pt-6 pb-4"
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="relative overflow-hidden pb-8 pt-safe-top"
       >
-        <div className="flex items-center gap-3">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="relative"
-          >
-            <Avatar className="h-14 w-14 ring-2 ring-fitness-orange/50">
-              <AvatarImage src={avatar} alt={name} className="object-cover" />
-              <AvatarFallback className="bg-fitness-orange/10 text-fitness-orange text-xl font-bold">
-                {name?.charAt(0)?.toUpperCase() || '?'}
-              </AvatarFallback>
-            </Avatar>
-            <motion.div
-              className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-fitness-success ring-2 ring-background"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3 }}
-            />
-          </motion.div>
-          <div>
-            <motion.p
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-sm text-muted-foreground"
-            >
-              {getGreeting()} 👋
-            </motion.p>
-            <motion.h1
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-xl font-bold text-foreground"
-            >
-              {name}
-            </motion.h1>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-1"
-            >
-              <StreakBadge streak={streak} size="sm" />
-            </motion.div>
+        {/* Hero Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-fitness-orange/10 via-background/50 to-background z-0" />
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 h-64 w-64 rounded-full bg-fitness-orange/20 blur-3xl" />
+        <div className="absolute top-0 left-0 -ml-20 -mt-20 h-64 w-64 rounded-full bg-fitness-purple/20 blur-3xl" />
+
+        <div className="relative z-10 px-6 pt-4">
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col">
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-sm font-medium text-muted-foreground"
+              >
+                {getGreeting()}
+              </motion.p>
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-1 text-3xl font-bold tracking-tight text-foreground"
+              >
+                {name}
+              </motion.h1>
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="mt-3 flex items-center gap-3"
+              >
+                <div className="flex items-center gap-2 rounded-full bg-background/50 backdrop-blur-md border border-white/10 px-3 py-1 shadow-sm">
+                  <StreakBadge streak={streak} size="sm" />
+                </div>
+              </motion.div>
+            </div>
+
+            <div className="flex flex-col items-end gap-4">
+              <div className="flex items-center gap-3">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setIsNotificationPanelOpen(true)}
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full bg-background/40 backdrop-blur-md border border-white/10 text-muted-foreground transition-colors hover:bg-background/60"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-fitness-orange ring-2 ring-background" />
+                  )}
+                </motion.button>
+
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative"
+                >
+                  <Avatar className="h-16 w-16 ring-4 ring-background shadow-xl">
+                    <AvatarImage src={avatar} alt={name} className="object-cover" />
+                    <AvatarFallback className="bg-fitness-orange text-white text-2xl font-bold">
+                      {name?.charAt(0)?.toUpperCase() || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-fitness-success ring-2 ring-background" />
+                </motion.div>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setIsNotificationPanelOpen(true)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50 text-muted-foreground transition-colors hover:bg-muted"
-          >
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-fitness-orange text-[10px] font-bold text-white">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50 text-muted-foreground transition-colors hover:bg-muted"
-          >
-            <Settings className="h-5 w-5" />
-          </motion.button>
-        </div>
-      </motion.header>
+      </motion.div>
 
       {/* Notification Panel */}
       <NotificationPanel

@@ -64,6 +64,9 @@ const ProtectedRoute = memo(({ children }: { children: React.ReactNode }) => {
 
 ProtectedRoute.displayName = "ProtectedRoute";
 
+import { AnimatePresence } from "framer-motion";
+import { PageTransition } from "@/components/layout/PageTransition";
+
 const AppRoutes = memo(() => {
   const location = useLocation();
   const { user, isLoading } = useAuth();
@@ -74,25 +77,27 @@ const AppRoutes = memo(() => {
   }
 
   return (
-    <Routes location={location} key={location.pathname}>
-      <Route path="/login" element={<Login />} />
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-      <Route path="/terms" element={<Terms />} />
-      <Route path="/delete-account" element={<DeleteAccount />} />
-      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/workout" element={<ProtectedRoute><Workout /></ProtectedRoute>} />
-      <Route path="/diet" element={<ProtectedRoute><Diet /></ProtectedRoute>} />
-      <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/theme-settings" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
-      <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
-      <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-      <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-      <Route path="/address/add" element={<ProtectedRoute><AddAddress /></ProtectedRoute>} />
-      <Route path="/order-success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
-      <Route path="/debug" element={<ProtectedRoute><Debug /></ProtectedRoute>} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+        <Route path="/privacy-policy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
+        <Route path="/terms" element={<PageTransition><Terms /></PageTransition>} />
+        <Route path="/delete-account" element={<PageTransition><DeleteAccount /></PageTransition>} />
+        <Route path="/" element={<ProtectedRoute><PageTransition><Dashboard /></PageTransition></ProtectedRoute>} />
+        <Route path="/workout" element={<ProtectedRoute><PageTransition><Workout /></PageTransition></ProtectedRoute>} />
+        <Route path="/diet" element={<ProtectedRoute><PageTransition><Diet /></PageTransition></ProtectedRoute>} />
+        <Route path="/progress" element={<ProtectedRoute><PageTransition><Progress /></PageTransition></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><PageTransition><Profile /></PageTransition></ProtectedRoute>} />
+        <Route path="/theme-settings" element={<ProtectedRoute><PageTransition><ThemeSettings /></PageTransition></ProtectedRoute>} />
+        <Route path="/shop" element={<ProtectedRoute><PageTransition><Shop /></PageTransition></ProtectedRoute>} />
+        <Route path="/cart" element={<ProtectedRoute><PageTransition><Cart /></PageTransition></ProtectedRoute>} />
+        <Route path="/checkout" element={<ProtectedRoute><PageTransition><Checkout /></PageTransition></ProtectedRoute>} />
+        <Route path="/address/add" element={<ProtectedRoute><PageTransition><AddAddress /></PageTransition></ProtectedRoute>} />
+        <Route path="/order-success" element={<ProtectedRoute><PageTransition><OrderSuccess /></PageTransition></ProtectedRoute>} />
+        <Route path="/debug" element={<ProtectedRoute><PageTransition><Debug /></PageTransition></ProtectedRoute>} />
+        <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
+      </Routes>
+    </AnimatePresence>
   );
 });
 

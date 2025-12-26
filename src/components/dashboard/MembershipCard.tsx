@@ -24,49 +24,32 @@ export const MembershipCard = ({
       transition={{ delay: 0.2 }}
     >
       <div className="relative p-4">
-        {/* Background gradient */}
-        <div className="absolute inset-0 gradient-primary opacity-10" />
-        
+        {/* Background gradient/pattern */}
+        <div className="absolute inset-0 bg-gradient-to-r from-fitness-orange/20 to-fitness-purple/20 opacity-30" />
+        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-fitness-yellow/10 blur-2xl" />
+
         <div className="relative flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Crown className="h-5 w-5 text-fitness-yellow" />
-              </motion.div>
-              <span className="text-sm font-semibold text-foreground">
-                {plan} Member
-              </span>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-fitness-yellow to-fitness-orange shadow-lg">
+              <Crown className="h-5 w-5 text-white" />
             </div>
-            
-            <div className="mt-3 flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>Expires {expiry}</span>
-              </div>
+            <div>
+              <p className="text-sm font-bold text-foreground flex items-center gap-1">
+                {plan} Plan
+                <span className="inline-flex items-center rounded-full bg-fitness-success/10 px-2 py-0.5 text-[10px] font-medium text-fitness-success">
+                  Active
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground">Expires {expiry}</p>
             </div>
-            
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="mt-3 inline-flex items-center gap-1 rounded-full bg-fitness-orange/20 px-3 py-1"
-            >
-              <TrendingUp className="h-3 w-3 text-fitness-orange" />
-              <span className="text-xs font-medium text-fitness-orange">
-                {daysLeft} days left
-              </span>
-            </motion.div>
           </div>
 
-          <ProgressRing progress={progress} size={70} strokeWidth={5}>
-            <div className="text-center">
-              <span className="text-lg font-bold text-foreground">{progress}%</span>
-              <p className="text-[10px] text-muted-foreground">Goal</p>
+          <div className="text-right">
+            <div className="flex flex-col items-end">
+              <span className="text-xs font-medium text-muted-foreground">Days Left</span>
+              <span className="text-xl font-bold text-fitness-orange leading-none">{daysLeft}</span>
             </div>
-          </ProgressRing>
+          </div>
         </div>
       </div>
     </GlassCard>

@@ -43,7 +43,7 @@ export const QuickStatsRow = ({
       transition={{ delay: 0.5 }}
       className="px-4"
     >
-      <div className="flex gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -51,14 +51,14 @@ export const QuickStatsRow = ({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5 + index * 0.1 }}
             whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="glass-card flex-1 p-3"
+            whileTap={{ scale: 0.95 }}
+            className="glass-card flex flex-col items-center justify-center p-3 text-center"
           >
-            <div className={`mb-2 inline-flex rounded-lg p-2 ${stat.bg}`}>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+            <div className={`mb-2 inline-flex rounded-full p-2.5 ${stat.bg}`}>
+              <stat.icon className={`h-5 w-5 ${stat.color}`} />
             </div>
-            <p className="text-lg font-bold text-foreground">{stat.value}</p>
-            <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+            <p className="text-lg font-bold text-foreground leading-none">{stat.value}</p>
+            <p className="mt-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
           </motion.div>
         ))}
       </div>
